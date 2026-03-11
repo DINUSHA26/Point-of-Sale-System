@@ -1,10 +1,10 @@
-# CDZ POS - Advanced SaaS Point of Sale System
+Advanced SaaS Point of Sale System
 
 A modern, cloud-native Point of Sale (POS) solution built for speed, scalability, and user experience. Designed for retail businesses, this system combines a robust Spring Boot backend with a sleek, responsive React frontend.
 
-## 🌟 Key Features
+ Key Features
 
-### 🖥️ Frontend (React + Vite + Tailwind CSS)
+ Frontend (React + Vite + Tailwind CSS)
 - **Modern Dashboard**: Glassmorphism design with real-time analytics (Revenue, Orders, Top Products).
 - **POS Terminal**: Fast checkout interface with cart management and product search.
 - **Inventory Management**: Track stock levels, manage categories, and update product details.
@@ -16,7 +16,7 @@ A modern, cloud-native Point of Sale (POS) solution built for speed, scalability
 - **Themes**: Dark/Light mode support with a custom **Emerald Green** accent.
 - **Responsive**: Fully optimized for desktop, tablet, and mobile devices.
 
-### ⚙️ Backend (Spring Boot 3 + Java 17)
+ Backend (Spring Boot 3 + Java 17)
 - **Secure API**: JWT-based authentication and stateless security.
 - **Robust Architecture**: Layered architecture (Controller, Service, Repository) with DTO pattern.
 - **Performance Optimized**: 
@@ -27,14 +27,14 @@ A modern, cloud-native Point of Sale (POS) solution built for speed, scalability
 - **Observability**: Built-in Prometheus metrics and Grafana dashboard configuration.
 - **SaaS Ready**: Structure supports multi-tenancy and Stripe integration for billing.
 
-## 🛠️ Tech Stack
+ Tech Stack
 
 - **Frontend**: React 18, Vite, Tailwind CSS, Shadcn UI, Recharts, Lucide Icons, Axios.
 - **Backend**: Java 17, Spring Boot 3.2, Spring Security 6, Spring Data JPA, Hibernate.
 - **Database**: MySQL 8.0.
 - **DevOps**: Docker, Docker Compose, Prometheus, Grafana.
 
-## 🚀 Getting Started
+ Getting Started
 
 ### Prerequisites
 - **Java 17** Development Kit (JDK)
@@ -42,7 +42,7 @@ A modern, cloud-native Point of Sale (POS) solution built for speed, scalability
 - **Docker** (Optional, for running MySQL/Prometheus/Grafana easily)
 - **MySQL** (If not using Docker)
 
-### 1. Database Setup
+ Database Setup
 Start MySQL using Docker Compose (recommended):
 ```bash
 cd backend
@@ -50,7 +50,7 @@ docker-compose up -d mysql
 ```
 *Alternatively, create a local MySQL database named `pos_bs`.*
 
-### 2. Backend Setup
+ Backend Setup
 1.  Navigate to the backend directory:
     ```bash
     cd backend
@@ -64,7 +64,7 @@ docker-compose up -d mysql
     *The server will start on `http://localhost:5000`.*
     *Swagger UI: `http://localhost:5000/swagger-ui.html`*
 
-### 3. Frontend Setup
+ Frontend Setup
 1.  Navigate to the frontend directory:
     ```bash
     cd frontend
@@ -80,7 +80,7 @@ docker-compose up -d mysql
     *Access the app at `http://localhost:3000` (or the port shown in terminal).*
 
 
-## 📂 Project Structure
+ Project Structure
 
 ```
 saas-pos-system/
