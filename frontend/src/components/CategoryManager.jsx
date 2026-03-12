@@ -109,7 +109,7 @@ export default function CategoryManager({ storeId, onCategoryChange }) {
         {categories.map((category) => (
           <div
             key={category.id}
-            className="flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full"
+            className="flex items-center gap-2 px-3 py-1 bg-secondary rounded-full"
           >
             <span className="text-sm">{category.name}</span>
             <Button

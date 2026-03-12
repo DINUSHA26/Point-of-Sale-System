@@ -116,6 +116,12 @@ export default function Dashboard() {
         }
       } catch (e) {
         console.error('Error fetching store:', e);
+      } finally {
+        // If we don't have a storeId after this, we should still stop loading
+        // so we can show a "No store found" state if desired.
+        // However, the analytics fetch will also set loading status.
+        // If no storeId, we are definitely NOT loading analytics.
+        setLoading(false);
       }
     };
     fetchStore();
