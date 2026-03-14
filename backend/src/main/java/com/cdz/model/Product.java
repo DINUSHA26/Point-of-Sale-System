@@ -29,11 +29,22 @@ public class Product {
     private Double mrp;
 
     private Double sellingPrice;
+    private Double costPrice;
 
     @Column(nullable = false, columnDefinition = "DOUBLE DEFAULT 0.0")
     private Double discountPercentage = 0.0; // 0-100 percentage discount on selling price
 
-    private String brand;
+    @ManyToOne
+    private Brand brand;
+
+    @ManyToOne
+    private Rack rack;
+
+    @ManyToOne
+    private Shelf shelf;
+
+    private boolean hasVariants = false;
+
     private String image;
 
     @ManyToOne

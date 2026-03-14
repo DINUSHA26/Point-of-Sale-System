@@ -11,6 +11,8 @@ public interface InventoryRepository extends JpaRepository<Inventory, Long> {
 
     Inventory findByProductIdAndStoreId(Long productId, Long storeId);
 
+    List<Inventory> findByProductId(Long productId);
+
     List<Inventory> findByStoreId(Long storeId);
 
     @Query("SELECT i FROM Inventory i WHERE i.store.id = :storeId AND i.quantity <= i.lowStockThreshold")

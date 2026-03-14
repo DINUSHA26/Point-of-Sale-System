@@ -15,20 +15,32 @@ public class ProductMapper {
                 .description(product.getDescription())
                 .mrp(product.getMrp())
                 .sellingPrice(product.getSellingPrice())
+                .costPrice(product.getCostPrice())
                 .discountPercentage(product.getDiscountPercentage())
-                .brand(product.getBrand())
+                .brandId(product.getBrand() != null ? product.getBrand().getId() : null)
+                .brandName(product.getBrand() != null ? product.getBrand().getName() : null)
+                .rackId(product.getRack() != null ? product.getRack().getId() : null)
+                .rackName(product.getRack() != null ? product.getRack().getName() : null)
+                .shelfId(product.getShelf() != null ? product.getShelf().getId() : null)
+                .shelfName(product.getShelf() != null ? product.getShelf().getName() : null)
+                .hasVariants(product.isHasVariants())
                 .category(CategoryMapper.toDTO(product.getCategory()))
                 .storeId(product.getStore() != null ? product.getStore().getId() : null)
                 .image(product.getImage())
                 .createdAt(product.getCreatedAt())
                 .updatedAt(product.getUpdatedAt())
                 .build();
-        // .categoryId(product.getCategoryId())
     }
 
+    // toEntity needs to be handled in the service layer since we need to fetch Brand, Rack, Shelf from DB.
+    // I'll leave a simple version here that doesn't set associations perfectly to be safe, 
+    // but the service should manually set them.
     public static Product toEntity(ProductDTO productDTO,
             Store store,
-            Category category) {
+            Category category,
+            com.cdz.model.Brand brand,
+            com.cdz.model.Rack rack,
+            com.cdz.model.Shelf shelf) {
         return Product.builder()
                 .name(productDTO.getName())
                 .store(store)
@@ -37,9 +49,13 @@ public class ProductMapper {
                 .description(productDTO.getDescription())
                 .mrp(productDTO.getMrp())
                 .sellingPrice(productDTO.getSellingPrice())
+                .costPrice(productDTO.getCostPrice())
                 .discountPercentage(
                         productDTO.getDiscountPercentage() != null ? productDTO.getDiscountPercentage() : 0.0)
-                .brand(productDTO.getBrand())
+                .brand(brand)
+                .rack(rack)
+                .shelf(shelf)
+                .hasVariants(productDTO.isHasVariants())
                 .image(productDTO.getImage())
                 .build();
 

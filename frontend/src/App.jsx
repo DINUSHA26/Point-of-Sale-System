@@ -16,6 +16,7 @@ import RefundsPage from './pages/RefundsPage';
 import StoreSettingsPage from './pages/StoreSettingsPage';
 import ProfileSettings from './pages/ProfileSettings';
 import ReportsPage from './pages/ReportsPage';
+import PromotionsPage from './pages/PromotionsPage';
 
 const PrivateRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -63,8 +64,17 @@ function AppRoutes() {
         <Route path="shift-reports" element={<ShiftReportsPage />} />
         <Route path="refunds" element={<RefundsPage />} />
         <Route path="reports" element={<ReportsPage />} />
+        <Route path="promotions" element={<PromotionsPage />} />
         <Route path="store-settings" element={<StoreSettingsPage />} />
         <Route path="profile-settings" element={<ProfileSettings />} />
+
+        {/* Dedicated Product Sections */}
+        <Route path="brands" element={<StoreSettingsPage />} />
+        <Route path="attributes" element={<StoreSettingsPage />} />
+        <Route path="racks" element={<StoreSettingsPage />} />
+        <Route path="shelves" element={<StoreSettingsPage />} />
+        <Route path="categories" element={<ProductsPage />} />
+
       </Route>
     </Routes>
   );

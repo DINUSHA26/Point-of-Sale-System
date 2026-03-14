@@ -261,42 +261,54 @@ export default function InventoryPage() {
         {displayedInventory.map((inv) => (
           <Card key={inv.id} className={inv.quantity <= (inv.lowStockThreshold || 10) ? 'border-destructive/50' : ''}>
             <CardContent className="p-4">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold">
-                      {inv.product?.name || 'Unknown Product'}
-                    </h3>
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 flex items-start gap-4">
+                  {inv.product?.image ? (
+                    <div className="w-16 h-16 rounded-md overflow-hidden bg-muted flex-shrink-0 border border-border">
+                      <img src={inv.product.image} alt={inv.product.name} className="w-full h-full object-cover" />
+                    </div>
+                  ) : (
+                    <div className="w-16 h-16 rounded-md bg-muted flex flex-col items-center justify-center flex-shrink-0 border border-border">
+                      <Package className="h-4 w-4 text-muted-foreground/50 mb-1" />
+                      <span className="text-[10px] text-muted-foreground leading-tight px-1 text-center">No Img</span>
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold truncate">
+                        {inv.product?.name || 'Unknown Product'}
+                      </h3>
+                      {inv.quantity <= (inv.lowStockThreshold || 10) && (
+                        <AlertTriangle className="h-4 w-4 text-destructive" />
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      SKU: {inv.product?.sku || 'N/A'}
+                    </p>
+                    <div className="mt-2">
+                      <span className={`text-2xl font-bold ${inv.quantity <= (inv.lowStockThreshold || 10) ? 'text-destructive' : 'text-primary'
+                        }`}>
+                        {inv.quantity}
+                      </span>
+                      <span className="text-sm text-muted-foreground ml-2">units</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Alert threshold: {inv.lowStockThreshold || 10}
+                    </p>
                     {inv.quantity <= (inv.lowStockThreshold || 10) && (
-                      <AlertTriangle className="h-4 w-4 text-destructive" />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="mt-3 w-full"
+                        onClick={() => handleAddStockDialog(inv)}
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        Add Stock
+                      </Button>
                     )}
                   </div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    SKU: {inv.product?.sku || 'N/A'}
-                  </p>
-                  <div className="mt-2">
-                    <span className={`text-2xl font-bold ${inv.quantity <= (inv.lowStockThreshold || 10) ? 'text-destructive' : 'text-primary'
-                      }`}>
-                      {inv.quantity}
-                    </span>
-                    <span className="text-sm text-muted-foreground ml-2">units</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Alert threshold: {inv.lowStockThreshold || 10}
-                  </p>
-                  {inv.quantity <= (inv.lowStockThreshold || 10) && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="mt-3 w-full"
-                      onClick={() => handleAddStockDialog(inv)}
-                    >
-                      <Plus className="h-3 w-3 mr-1" />
-                      Add Stock
-                    </Button>
-                  )}
                 </div>
-                <div className="flex gap-1">
+                <div className="flex gap-1 flex-shrink-0">
                   <Button
                     variant="ghost"
                     size="icon"

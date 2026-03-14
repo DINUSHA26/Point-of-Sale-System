@@ -68,4 +68,33 @@ public class EmailServiceImpl implements EmailService {
 
         sendEmail(store.getContact().getEmail(), "Low Stock Alert - " + store.getBrand(), htmlContent, true);
     }
+    @Override
+    public void sendOrderReceipt(String to, com.cdz.payload.dto.ReceiptDTO receipt) {
+        if (to == null || to.isEmpty()) return;
+
+        Context context = new Context();
+        context.setVariable("receipt", receipt);
+
+        try {
+            String htmlContent = templateEngine.process("email/receipt", context);
+            sendEmail(to, "Your Receipt from " + receipt.getStoreName() + " (Order #" + receipt.getOrderId() + ")", htmlContent, true);
+        } catch (Exception e) {
+            log.error("Failed to process receipt email template", e);
+            // Fallback to text summary
+            StringBuilder text = new StringBuilder();
+            text.append("Hello ").append(receipt.getCustomerName() != null ? receipt.getCustomerName() : "Customer").append(",\n\n");
+            text.append("Thank you for your purchase at ").append(receipt.getStoreName()).append("!\n\n");
+            text.append("Order #").append(receipt.getOrderId()).append("\n");
+            text.append("Date: ").append(receipt.getOrderDate()).append("\n\n");
+            text.append("Items:\n");
+            for (com.cdz.payload.dto.ReceiptDTO.ReceiptItemDTO item : receipt.getItems()) {
+                text.append("- ").append(item.getProductName()).append(" x ").append(item.getQuantity())
+                    .append(" ($").append(String.format("%.2f", item.getLineTotal())).append(")\n");
+            }
+            text.append("\nTotal: $").append(String.format("%.2f", receipt.getTotalAmount())).append("\n\n");
+            text.append("Best regards,\n").append(receipt.getStoreName());
+
+            sendEmail(to, "Receipt from " + receipt.getStoreName(), text.toString(), false);
+        }
+    }
 }

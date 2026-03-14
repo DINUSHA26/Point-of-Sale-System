@@ -15,6 +15,23 @@ import {
   LogOut,
   Menu,
   X,
+  ChevronDown,
+  ChevronRight,
+  PlusCircle,
+  Tags,
+  Layers,
+  Archive,
+  Grid3X3,
+  Dna,
+  PieChart,
+  History,
+  TrendingUp,
+  ClipboardList,
+  Users2,
+  UserPlus,
+  Percent,
+  Ticket,
+  Gift
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '../../lib/utils';
@@ -23,13 +40,54 @@ import { ModeToggle } from '../mode-toggle';
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'POS Terminal', href: '/pos', icon: ShoppingCart },
-  { name: 'Products', href: '/products', icon: Package },
+  {
+    name: 'Products',
+    icon: Package,
+    submenu: [
+      { name: 'All Products', href: '/products', icon: Archive },
+      { name: 'Add Product', href: '/products?action=add', icon: PlusCircle },
+      { name: 'Categories', href: '/categories', icon: Tags },
+      { name: 'Brands', href: '/brands', icon: Layers },
+      { name: 'Attributes', href: '/attributes', icon: Dna },
+      { name: 'Racks', href: '/racks', icon: Grid3X3 },
+      { name: 'Shelves', href: '/shelves', icon: Boxes },
+    ]
+  },
   { name: 'Orders', href: '/orders', icon: Receipt },
-  // { name: 'Customers', href: '/customers', icon: Users },
   { name: 'Employees', href: '/employees', icon: UserCog },
   { name: 'Inventory', href: '/inventory', icon: Boxes },
-  { name: 'Shift Reports', href: '/shift-reports', icon: FileText },
-
+  {
+    name: 'Customer Management',
+    icon: Users,
+    submenu: [
+      { name: 'All Customers', href: '/customers?type=all', icon: Users },
+      { name: 'Add Customer', href: '/customers?action=add', icon: UserPlus },
+    ]
+  },
+  {
+    name: 'Discount & Promotion Management',
+    icon: Percent,
+    submenu: [
+      { name: 'Seasonal discounts for product', href: '/promotions?type=seasonal', icon: Percent },
+      { name: 'Coupon codes', href: '/promotions?type=coupons', icon: Ticket },
+      { name: 'Buy 1 get 1 offers', href: '/promotions?type=bogo', icon: Gift },
+      { name: 'Member discounts', href: '/promotions?type=members', icon: Users },
+      { name: 'Loyalty point config for customers', href: '/promotions?type=loyalty', icon: Settings }
+    ]
+  },
+  {
+    name: 'Reports',
+    icon: FileText,
+    submenu: [
+      { name: 'Daily Sales', href: '/reports?type=daily', icon: TrendingUp },
+      { name: 'Product Sales', href: '/reports?type=product', icon: Archive },
+      { name: 'Monthly/Yearly', href: '/reports?type=monthly', icon: History },
+      { name: 'Profit & Loss', href: '/reports?type=profit-loss', icon: PieChart },
+      { name: 'Inventory Report', href: '/reports?type=inventory', icon: ClipboardList },
+      { name: 'Staff Sales', href: '/reports?type=staff', icon: Users2 },
+      { name: 'Shift History', href: '/shift-reports', icon: History },
+    ]
+  },
   { name: 'Store Settings', href: '/store-settings', icon: Settings },
 ];
 
@@ -38,10 +96,17 @@ export default function DashboardLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [expandedMenus, setExpandedMenus] = useState(['Products']); // Keep Products expanded by default
 
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const toggleMenu = (name) => {
+    setExpandedMenus(prev =>
+      prev.includes(name) ? prev.filter(m => m !== name) : [...prev, name]
+    );
   };
 
   return (
@@ -89,31 +154,70 @@ export default function DashboardLayout() {
           {/* Navigation */}
           <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700">
             {navigation.map((item) => {
-              const isActive = location.pathname === item.href;
+              const hasSubmenu = !!item.submenu;
+              const isExpanded = expandedMenus.includes(item.name);
+              const isActive = location.pathname === item.href ||
+                (hasSubmenu && item.submenu.some(sub => location.pathname === sub.href));
               const Icon = item.icon;
+
               return (
-                <button
-                  key={item.name}
-                  onClick={() => {
-                    navigate(item.href);
-                    setSidebarOpen(false);
-                  }}
-                  className={cn(
-                    "w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group",
-                    isActive
-                      ? "bg-primary/10 text-primary border border-primary/20"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                <div key={item.name} className="space-y-1">
+                  <button
+                    onClick={() => {
+                      if (hasSubmenu) {
+                        toggleMenu(item.name);
+                      } else {
+                        navigate(item.href);
+                        setSidebarOpen(false);
+                      }
+                    }}
+                    className={cn(
+                      "w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group",
+                      isActive && !hasSubmenu
+                        ? "bg-primary/10 text-primary border border-primary/20"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                    )}
+                  >
+                    <Icon className={cn(
+                      "h-5 w-5 transition-colors",
+                      isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+                    )} />
+                    <span>{item.name}</span>
+                    {hasSubmenu && (
+                      <div className="ml-auto">
+                        {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                      </div>
+                    )}
+                  </button>
+
+                  {hasSubmenu && isExpanded && (
+                    <div className="ml-4 pl-4 border-l border-border space-y-1 mt-1">
+                      {item.submenu.map((sub) => {
+                        const isSubActive = location.pathname === sub.href ||
+                          (sub.href.includes('?') && location.pathname + location.search === sub.href);
+                        const SubIcon = sub.icon;
+                        return (
+                          <button
+                            key={sub.name}
+                            onClick={() => {
+                              navigate(sub.href);
+                              setSidebarOpen(false);
+                            }}
+                            className={cn(
+                              "w-full flex items-center gap-3 px-4 py-2 rounded-lg text-xs font-medium transition-all duration-200",
+                              isSubActive
+                                ? "text-primary bg-primary/5"
+                                : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                            )}
+                          >
+                            <SubIcon className="h-4 w-4" />
+                            <span>{sub.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   )}
-                >
-                  <Icon className={cn(
-                    "h-5 w-5 transition-colors",
-                    isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
-                  )} />
-                  <span>{item.name}</span>
-                  {isActive && (
-                    <div className="ml-auto h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-                  )}
-                </button>
+                </div>
               );
             })}
           </nav>

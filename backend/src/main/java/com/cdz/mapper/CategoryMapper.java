@@ -11,6 +11,7 @@ public class CategoryMapper {
                 .id(category.getId())
                 .name(category.getName())
                 .storeId(category.getStore()!=null?category.getStore().getId():null)
+                .parentCategoryId(category.getParent()!=null?category.getParent().getId():null)
                 .build();
     }
 }

@@ -47,36 +47,21 @@ public class OrderServiceImpl implements OrderService {
 
                 Customer customer = null;
                 if (orderDTO.getCustomerId() != null) {
-                        // Use existing logic if ID is provided (e.g., from search)
-                        // ... fetch customer by ID ...
-                        // For now, let's assume the frontend might still send the full object or ID
-                        // But we prioritize the new flow if name/phone are sent without ID
-                }
-
-                // New Flow: Auto-create or Link by Phone
-                if (orderDTO.getCustomerPhone() != null && !orderDTO.getCustomerPhone().isEmpty()) {
-                        List<Customer> existing = customerService.searchCustomer(orderDTO.getCustomerPhone()); // Assuming
-                                                                                                               // searchCustomer
-                                                                                                               // uses
-                                                                                                               // phone
-                                                                                                               // too,
-                                                                                                               // or we
-                                                                                                               // use
-                                                                                                               // repository
-                                                                                                               // directly
-                        if (!existing.isEmpty()) {
-                                customer = existing.get(0);
-                        } else {
-                                // Create new
+                        customer = customerService.getCustomer(orderDTO.getCustomerId());
+                } else if (orderDTO.getCustomerPhone() != null && !orderDTO.getCustomerPhone().isEmpty()) {
+                        customer = customerService.getCustomerByPhone(orderDTO.getCustomerPhone(), store.getId());
+                        
+                        if (customer == null) {
+                                // Create new customer if not found by phone
                                 customer = new Customer();
-                                customer.setFullName(orderDTO.getCustomerName() != null ? orderDTO.getCustomerName()
-                                                : "Guest");
+                                customer.setFullName(orderDTO.getCustomerName() != null && !orderDTO.getCustomerName().isEmpty() 
+                                                ? orderDTO.getCustomerName() : "Guest");
                                 customer.setPhone(orderDTO.getCustomerPhone());
                                 customer.setStore(store);
-                                customer = customerService.createCustomer(customer); // Reuse service to save
+                                customer = customerService.createCustomer(customer);
                         }
-                } else if (orderDTO.getCustomer() != null) {
-                        customer = orderDTO.getCustomer();
+                } else if (orderDTO.getCustomer() != null && orderDTO.getCustomer().getId() != null) {
+                        customer = customerService.getCustomer(orderDTO.getCustomer().getId());
                 }
 
                 Order order = Order.builder()
@@ -104,9 +89,12 @@ public class OrderServiceImpl implements OrderService {
                                         double itemDiscountTotal = discountAmount * itemDto.getQuantity();
 
                                         return OrderItem.builder()
+                                                        .productName(product.getName())
+                                                        .productSku(product.getSku())
                                                         .product(product)
                                                         .quantity(itemDto.getQuantity())
                                                         .price(itemTotal)
+                                                        .costPrice(product.getCostPrice() != null ? product.getCostPrice() * itemDto.getQuantity() : 0.0)
                                                         .originalPrice(originalPrice * itemDto.getQuantity())
                                                         .discountApplied(itemDiscountTotal)
                                                         .order(order)
@@ -156,6 +144,22 @@ public class OrderServiceImpl implements OrderService {
                 }
 
                 Order savedOrder = orderRepository.save(order);
+
+                // Award Loyalty Points: 1 point for every $10 spent
+                if (customer != null) {
+                    try {
+                        double rate = store.getLoyaltyPointRate() != null ? store.getLoyaltyPointRate() : 10.0;
+                        int pointsAwarded = (int) (total / rate);
+                        if (pointsAwarded > 0) {
+                            int currentPoints = customer.getLoyaltyPoints() != null ? customer.getLoyaltyPoints() : 0;
+                            customer.setLoyaltyPoints(currentPoints + pointsAwarded);
+                            customerService.updateCustomer(customer.getId(), customer);
+                        }
+                    } catch (Exception e) {
+                        // Log error but don't fail order creation if points fail
+                        System.err.println("Failed to award loyalty points: " + e.getMessage());
+                    }
+                }
 
                 return OrderMapper.toDTO(savedOrder);
         }
@@ -326,9 +330,8 @@ public class OrderServiceImpl implements OrderService {
                                                                         : 0.0;
 
                                         return ReceiptDTO.ReceiptItemDTO.builder()
-                                                        .productName(product != null ? product.getName()
-                                                                        : "Unknown Product")
-                                                        .productSku(product != null ? product.getSku() : "")
+                                                        .productName(item.getProductName() != null ? item.getProductName() : (product != null ? product.getName() : "Unknown Product"))
+                                                        .productSku(item.getProductSku() != null ? item.getProductSku() : (product != null ? product.getSku() : ""))
                                                         .quantity(quantity)
                                                         .originalPrice(originalPricePerUnit)
                                                         .discountPercentage(discountPercentage)

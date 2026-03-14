@@ -15,6 +15,8 @@ public class CategoryDTO {
 //    private Store store;
 
     private Long storeId;
+    private Long parentCategoryId;
 }
+
 
 

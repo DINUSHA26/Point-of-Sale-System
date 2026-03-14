@@ -17,4 +17,5 @@ public class DailySalesReportDTO {
     private Integer totalOrders;
     private Double totalRevenue;
     private Double averageOrderValue;
+    private java.util.Map<String, Double> paymentBreakdown;
 }

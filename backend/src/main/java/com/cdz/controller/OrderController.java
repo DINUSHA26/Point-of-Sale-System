@@ -21,6 +21,7 @@ import java.util.List;
 public class OrderController {
 
     private final OrderService orderService;
+    private final com.cdz.service.EmailService emailService;
 
     @PostMapping
     @Operation(summary = "Create a new order")
@@ -56,6 +57,31 @@ public class OrderController {
     @Operation(summary = "Get orders by customer ID")
     public ResponseEntity<List<OrderDTO>> getCustomersOrders(@PathVariable Long id) throws Exception {
         return ResponseEntity.ok(orderService.getOrdersByCustomerId(id));
+    }
+
+    @PostMapping("/{id}/email")
+    @Operation(summary = "Email order receipt to customer")
+    public ResponseEntity<ApiResponse> emailReceipt(@PathVariable Long id, @RequestParam(required = false) String email)
+            throws Exception {
+        ReceiptDTO receipt = orderService.generateReceipt(id);
+        String targetEmail = email;
+
+        if (targetEmail == null || targetEmail.isEmpty()) {
+            OrderDTO order = orderService.getOrderById(id);
+            if (order.getCustomer() != null) {
+                targetEmail = order.getCustomer().getEmail();
+            }
+        }
+
+        if (targetEmail == null || targetEmail.isEmpty()) {
+            throw new Exception("No email address provided or found for customer");
+        }
+
+        emailService.sendOrderReceipt(targetEmail, receipt);
+
+        ApiResponse apiResponse = new ApiResponse();
+        apiResponse.setMessage("Receipt emailed successfully to " + targetEmail);
+        return ResponseEntity.ok(apiResponse);
     }
 
     @GetMapping("/recent/store/{storeId}")

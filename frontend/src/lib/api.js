@@ -114,6 +114,7 @@ export const orderAPI = {
   getByCustomer: (customerId) => api.get(`/api/orders/customer/${customerId}`),
   getByCashier: (cashierId) => api.get(`/api/orders/cashier/${cashierId}`),
   update: (id, orderData) => api.put(`/api/orders/${id}`, orderData),
+  emailReceipt: (id, email) => api.post(`/api/orders/${id}/email`, null, { params: email ? { email } : {} }),
   delete: (id) => api.delete(`/api/orders/${id}`),
 };
 
@@ -145,6 +146,19 @@ export const billingAPI = {
     api.post('/api/billing/refund', { paymentIntentId, amountCents, reason }),
 };
 
+// Image Upload API
+export const imageAPI = {
+  upload: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/api/images/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+};
+
 // Shift Report APIs
 export const shiftReportAPI = {
   startShift: () => api.post('/api/shift-report/start'),
@@ -165,12 +179,36 @@ export const analyticsAPI = {
   getHourlySales: (storeId) => api.get(`/api/analytics/hourly-sales/${storeId}`),
 };
 
-// Report APIs  
 export const reportAPI = {
   getDailySales: (storeId, startDate, endDate) =>
     api.get(`/api/reports/daily-sales/${storeId}`, { params: { startDate, endDate } }),
   getItemSales: (storeId, startDate, endDate) =>
     api.get(`/api/reports/item-sales/${storeId}`, { params: { startDate, endDate } }),
+  getProfitLoss: (storeId, startDate, endDate, period = 'DAILY') =>
+    api.get(`/api/reports/profit-loss/${storeId}`, { params: { startDate, endDate, period } }),
+  getInventoryReport: (storeId) =>
+    api.get(`/api/reports/inventory/${storeId}`),
+  getStaffSales: (storeId, startDate, endDate) =>
+    api.get(`/api/reports/staff-sales/${storeId}`, { params: { startDate, endDate } }),
+};
+
+export const storeSettingsAPI = {
+  getBrands: (storeId) => api.get(`/api/store-settings/${storeId}/brands`),
+  createBrand: (storeId, name) => api.post(`/api/store-settings/${storeId}/brands`, null, { params: { name } }),
+  deleteBrand: (id) => api.delete(`/api/store-settings/brands/${id}`),
+
+  getRacks: (storeId) => api.get(`/api/store-settings/${storeId}/racks`),
+  createRack: (storeId, name) => api.post(`/api/store-settings/${storeId}/racks`, null, { params: { name } }),
+  deleteRack: (id) => api.delete(`/api/store-settings/racks/${id}`),
+
+  getShelves: (storeId) => api.get(`/api/store-settings/${storeId}/shelves`),
+  createShelf: (storeId, name) => api.post(`/api/store-settings/${storeId}/shelves`, null, { params: { name } }),
+  deleteShelf: (id) => api.delete(`/api/store-settings/shelves/${id}`),
+
+  getAttributes: (storeId) => api.get(`/api/store-settings/${storeId}/attributes`),
+  createAttribute: (storeId, name, values) => api.post(`/api/store-settings/${storeId}/attributes`, null, { params: { name, values: values.join(',') } }),
+  updateAttribute: (id, values) => api.put(`/api/store-settings/attributes/${id}`, null, { params: { values: values.join(',') } }),
+  deleteAttribute: (id) => api.delete(`/api/store-settings/attributes/${id}`),
 };
 
 export default api;

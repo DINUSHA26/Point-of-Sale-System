@@ -177,7 +177,7 @@ export default function OrdersPage() {
                       <div className="mt-3 space-y-1">
                         {order.items.map((item, idx) => (
                           <div key={idx} className="text-sm">
-                            {item.product?.name || 'Product'} × {item.quantity} @ ${item.price}
+                            {item.productName || item.product?.name || 'Product'} × {item.quantity} @ ${item.price?.toFixed(2)}
                           </div>
                         ))}
                       </div>

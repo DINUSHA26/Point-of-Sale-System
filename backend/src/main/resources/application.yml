@@ -27,10 +27,9 @@ spring:
 
 server:
   port: ${SERVER_PORT:5000}
-  servlet:
-    multipart:
-      max-file-size: 10MB
-      max-request-size: 10MB
+
+spring.servlet.multipart.max-file-size: 10MB
+spring.servlet.multipart.max-request-size: 10MB
 
 # JWT
 jwt:
@@ -65,3 +64,9 @@ management:
         enabled: true
     tags:
       application: ${spring.application.name}
+
+# Cloudinary Configuration
+cloudinary:
+  cloud_name: dg2ikhor7
+  api_key: 694551967181653
+  api_secret: giaLwgnfYarxnmvzQB7nnl8vo1g

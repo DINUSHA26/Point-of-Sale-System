@@ -24,6 +24,8 @@ public class Customer {
     private String email;
 
     private String phone;
+    private String address;
+    private Integer loyaltyPoints = 0;
 
     @ManyToOne
     @com.fasterxml.jackson.annotation.JsonIgnoreProperties("storeAdmin")

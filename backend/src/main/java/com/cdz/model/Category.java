@@ -18,6 +18,10 @@ public class Category {
 
     private String name;
 
+    @ManyToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "parent_id")
+    private Category parent;
+
     @ManyToOne
     private Store store;
 }

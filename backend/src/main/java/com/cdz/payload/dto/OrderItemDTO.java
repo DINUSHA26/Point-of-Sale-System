@@ -19,6 +19,9 @@ public class OrderItemDTO {
 
     private Long productId;
 
+    private String productName;
+    private String productSku;
+
     private Long orderId;
 
 }

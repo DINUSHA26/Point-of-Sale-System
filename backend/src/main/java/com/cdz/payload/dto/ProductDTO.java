@@ -23,8 +23,17 @@ public class ProductDTO {
     private Double mrp;
 
     private Double sellingPrice;
+    private Double costPrice;
     private Double discountPercentage;
-    private String brand;
+    private Long brandId;
+    private String brandName;
+    private Long rackId;
+    private String rackName;
+    private Long shelfId;
+    private String shelfName;
+    
+    private boolean hasVariants;
+    private java.util.List<ProductVariantDTO> variants;
     private String image;
 
     private CategoryDTO category;

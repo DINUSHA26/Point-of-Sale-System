@@ -25,4 +25,8 @@ public interface ShiftReportRepository extends JpaRepository<ShiftReport, Long> 
             LocalDateTime start,
             LocalDateTime end
     );
+
+    @org.springframework.data.jpa.repository.Query("SELECT s FROM ShiftReport s JOIN s.topSellingProducts p WHERE p.id = :productId")
+    List<ShiftReport> findByTopSellingProductId(@org.springframework.data.repository.query.Param("productId") Long productId);
+
 }

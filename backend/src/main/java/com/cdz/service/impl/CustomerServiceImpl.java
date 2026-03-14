@@ -28,6 +28,10 @@ public class CustomerServiceImpl implements CustomerService {
         customerToUpdate.setFullName(customerDetails.getFullName());
         customerToUpdate.setEmail(customerDetails.getEmail());
         customerToUpdate.setPhone(customerDetails.getPhone());
+        customerToUpdate.setAddress(customerDetails.getAddress());
+        if (customerDetails.getLoyaltyPoints() != null) {
+            customerToUpdate.setLoyaltyPoints(customerDetails.getLoyaltyPoints());
+        }
         return customerRepository.save(customerToUpdate);
     }
 
@@ -57,6 +61,11 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     public List<Customer> searchCustomer(String keyword) throws Exception {
-        return customerRepository.findByFullNameContainingIgnoreCaseOrEmailContainingIgnoreCase(keyword, keyword);
+        return customerRepository.findByFullNameContainingIgnoreCaseOrEmailContainingIgnoreCaseOrPhoneContainingIgnoreCase(keyword, keyword, keyword);
+    }
+
+    @Override
+    public Customer getCustomerByPhone(String phone, Long storeId) {
+        return customerRepository.findByPhoneAndStoreId(phone, storeId);
     }
 }

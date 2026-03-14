@@ -4,6 +4,7 @@ import { productAPI, customerAPI, orderAPI, storeAPI, billingAPI, categoryAPI } 
 import { useToast } from '../components/ui/use-toast';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
@@ -303,14 +304,23 @@ export default function POSPage() {
                   <button
                     key={product.id}
                     onClick={() => addToCart(product)}
-                    className="p-3 border rounded-lg hover:bg-gray-50 text-left transition-colors relative"
+                    className="p-3 border rounded-lg hover:bg-gray-50 text-left transition-colors relative flex flex-col bg-card"
                   >
                     {hasDiscount && (
-                      <span className="absolute top-2 right-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-500/20 text-green-600 border border-green-500/30">
+                      <span className="absolute top-2 right-2 z-10 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-500/20 text-green-600 border border-green-500/30">
                         {product.discountPercentage}% OFF
                       </span>
                     )}
-                    <div className="font-medium text-sm pr-12">{product.name}</div>
+                    {product.image ? (
+                      <div className="w-full aspect-square mb-3 rounded-md overflow-hidden bg-muted flex-shrink-0 border border-border">
+                        <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className="w-full aspect-square mb-3 rounded-md bg-muted flex items-center justify-center flex-shrink-0 border border-border">
+                        <span className="text-muted-foreground text-xs">No Image</span>
+                      </div>
+                    )}
+                    <div className="font-medium text-sm pr-8 leading-tight mb-1">{product.name}</div>
                     {hasDiscount ? (
                       <div className="mt-1">
                         <div className="text-[10px] text-muted-foreground line-through">
@@ -366,7 +376,7 @@ export default function POSPage() {
                   <div className="relative">
                     <Label className="text-xs text-muted-foreground mb-1 block">Search Existing</Label>
                     <Input
-                      placeholder="Search by name or phone..."
+                      placeholder="Search by name, phone or email..."
                       value={customerSearch}
                       onChange={(e) => {
                         setCustomerSearch(e.target.value);
@@ -453,24 +463,33 @@ export default function POSPage() {
                 cart.map((item) => {
                   const hasDiscount = item.originalPrice > item.price;
                   return (
-                    <div key={item.product.id} className="flex items-center justify-between p-2 border rounded-lg">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <div className="font-medium text-sm">{item.product.name}</div>
+                    <div key={item.product.id} className="flex items-center justify-between p-2 border rounded-lg gap-3 bg-card">
+                      {item.product.image ? (
+                        <div className="w-12 h-12 rounded overflow-hidden flex-shrink-0 border border-border">
+                          <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover" />
+                        </div>
+                      ) : (
+                        <div className="w-12 h-12 rounded bg-muted flex-shrink-0 border border-border flex items-center justify-center">
+                          <span className="text-[9px] text-muted-foreground">No Img</span>
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <div className="font-medium text-sm truncate">{item.product.name}</div>
                           {hasDiscount && (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-500/20 text-green-600 border border-green-500/30">
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-500/20 text-green-600 border border-green-500/30 flex-shrink-0">
                               {item.product.discountPercentage}% OFF
                             </span>
                           )}
                         </div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-xs text-muted-foreground truncate">
                           {hasDiscount && (
                             <span className="line-through mr-2">${item.originalPrice.toFixed(2)}</span>
                           )}
                           ${item.price.toFixed(2)} × {item.quantity} = ${(item.price * item.quantity).toFixed(2)}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 flex-shrink-0">
                         <Button
                           variant="outline"
                           size="icon"

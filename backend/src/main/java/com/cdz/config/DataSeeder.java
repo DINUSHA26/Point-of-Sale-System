@@ -30,6 +30,7 @@ public class DataSeeder implements CommandLineRunner {
     private final OrderItemRepository orderItemRepository;
     private final InventoryRepository inventoryRepository;
     private final PasswordEncoder passwordEncoder;
+    private final BrandRepository brandRepository;
 
     @Override
     public void run(String... args) throws Exception {
@@ -80,6 +81,10 @@ public class DataSeeder implements CommandLineRunner {
             categories.add(categoryRepository.save(category));
         }
 
+        // Create a default Brand
+        Brand genericBrand = Brand.builder().name("Generic Brand").store(store).build();
+        genericBrand = brandRepository.save(genericBrand);
+
         // 4. Create Products & Inventory
         List<Product> products = new ArrayList<>();
         String[] prodNames = { "Smartphone", "Laptop", "T-Shirt", "Jeans", "Sofa", "Desk", "Novel", "Action Figure" };
@@ -95,7 +100,7 @@ public class DataSeeder implements CommandLineRunner {
             product.setSellingPrice(price);
 
             product.setSku("SKU-" + (1000 + i));
-            product.setBrand("Generic Brand");
+            product.setBrand(genericBrand);
             product.setCategory(categories.get(random.nextInt(categories.size())));
             product.setStore(store);
             product = productRepository.save(product);

@@ -16,7 +16,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
         @Query("SELECT p FROM Product p " +
                         "WHERE p.store.id = :storeId AND (" +
                         "LOWER(p.name)  LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-                        "LOWER(p.brand) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+                        "LOWER(p.brand.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
                         "LOWER(p.sku)   LIKE LOWER(CONCAT('%', :keyword, '%')) " +
                         ")")
         List<Product> searchByKeyword(@Param("storeId") Long storeId,

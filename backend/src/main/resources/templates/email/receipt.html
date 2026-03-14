@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Order Receipt</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px; }
+        .header { text-align: center; border-bottom: 2px solid #10b981; padding-bottom: 20px; margin-bottom: 20px; }
+        .store-name { font-size: 24px; font-weight: bold; color: #10b981; }
+        .order-info { margin-bottom: 20px; display: flex; justify-content: space-between; font-size: 14px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th { text-align: left; border-bottom: 1px solid #eee; padding: 10px 0; font-size: 12px; color: #666; }
+        td { padding: 12px 0; border-bottom: 1px solid #fafafa; }
+        .item-name { font-weight: 500; font-size: 14px; }
+        .item-sku { font-size: 11px; color: #999; }
+        .totals { margin-top: 20px; border-top: 2px solid #eee; padding-top: 10px; }
+        .total-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
+        .grand-total { font-size: 18px; font-weight: bold; color: #10b981; margin-top: 10px; border-top: 1px solid #10b981; padding-top: 10px; }
+        .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #999; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="store-name" th:text="${receipt.storeName}">Store Name</div>
+            <div th:text="${receipt.storeAddress}">Store Address</div>
+            <div th:text="${receipt.storePhone}">Store Phone</div>
+        </div>
+
+        <div class="header" style="border-bottom: none; padding-bottom: 0;">
+            <h2 style="margin: 0;">Order Receipt</h2>
+        </div>
+
+        <div class="order-info">
+            <div>
+                <strong>Order ID:</strong> #<span th:text="${receipt.orderId}">000</span><br>
+                <strong>Date:</strong> <span th:text="${#temporals.format(receipt.orderDate, 'MMM dd, yyyy HH:mm')}">Date</span>
+            </div>
+            <div style="text-align: right;">
+                <strong>Customer:</strong> <span th:text="${receipt.customerName != null ? receipt.customerName : 'Guest'}">Customer</span><br>
+                <strong>Cashier:</strong> <span th:text="${receipt.cashierName}">Cashier</span>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>PRODUCT</th>
+                    <th style="text-align: center;">QTY</th>
+                    <th style="text-align: right;">TOTAL</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="item : ${receipt.items}">
+                    <td>
+                        <div class="item-name" th:text="${item.productName}">Product</div>
+                        <div class="item-sku" th:text="${item.productSku}">SKU</div>
+                    </td>
+                    <td style="text-align: center;" th:text="${item.quantity}">1</td>
+                    <td style="text-align: right;" th:text="${'$' + #numbers.formatDecimal(item.lineTotal, 1, 2)}">$0.00</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="totals">
+            <div class="total-row">
+                <span>Subtotal</span>
+                <span th:text="${'$' + #numbers.formatDecimal(receipt.subtotal, 1, 2)}">$0.00</span>
+            </div>
+            <div class="total-row" th:if="${receipt.totalDiscount > 0}">
+                <span>Discount</span>
+                <span style="color: #ef4444;" th:text="${'-$' + #numbers.formatDecimal(receipt.totalDiscount, 1, 2)}">-$0.00</span>
+            </div>
+            <div class="total-row grand-total">
+                <span>Total Amount</span>
+                <span th:text="${'$' + #numbers.formatDecimal(receipt.totalAmount, 1, 2)}">$0.00</span>
+            </div>
+            <div class="total-row" style="margin-top: 10px; font-size: 12px; color: #666;">
+                <span>Payment Method</span>
+                <span th:text="${receipt.paymentType}">CASH</span>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Thank you for shopping with us!</p>
+            <p>Please keep this receipt for your records.</p>
+        </div>
+    </div>
+</body>
+</html>

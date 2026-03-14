@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { storeAPI } from '../lib/api';
 import { useToast } from '../components/ui/use-toast';
@@ -7,10 +8,13 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Loader2 } from 'lucide-react';
+import { BrandsManager, RacksManager, ShelvesManager, AttributesManager } from '../components/StoreSettingsManagers';
 
 export default function StoreSettingsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const location = useLocation();
+  const path = location.pathname;
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
@@ -22,6 +26,7 @@ export default function StoreSettingsPage() {
       phone: '',
       email: '',
     },
+    loyaltyPointRate: 10,
   });
 
   useEffect(() => {
@@ -46,9 +51,9 @@ export default function StoreSettingsPage() {
             phone: storeData.contact?.phone || '',
             email: storeData.contact?.email || '',
           },
+          loyaltyPointRate: storeData.loyaltyPointRate || 10,
         });
       } catch (error) {
-        // If no store exists yet, stay in "create" mode with empty form
         if (error.response?.status === 400 || error.response?.status === 404) {
           setStore(null);
           setFormData({
@@ -118,6 +123,19 @@ export default function StoreSettingsPage() {
     );
   }
 
+  if (path === '/brands') {
+    return <div className="space-y-6"><div><h1 className="text-3xl font-bold">Brands</h1></div>{store && <BrandsManager storeId={store.id} />}</div>;
+  }
+  if (path === '/attributes') {
+    return <div className="space-y-6"><div><h1 className="text-3xl font-bold">Attributes</h1></div>{store && <AttributesManager storeId={store.id} />}</div>;
+  }
+  if (path === '/racks') {
+    return <div className="space-y-6"><div><h1 className="text-3xl font-bold">Racks</h1></div>{store && <RacksManager storeId={store.id} />}</div>;
+  }
+  if (path === '/shelves') {
+    return <div className="space-y-6"><div><h1 className="text-3xl font-bold">Shelves</h1></div>{store && <ShelvesManager storeId={store.id} />}</div>;
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -149,6 +167,16 @@ export default function StoreSettingsPage() {
                   value={formData.storeType}
                   onChange={(e) => setFormData({ ...formData, storeType: e.target.value })}
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="loyaltyPointRate text-amber-600">Loyalty Point Award Rate ($ per point)</Label>
+                <Input
+                  id="loyaltyPointRate"
+                  type="number"
+                  value={formData.loyaltyPointRate}
+                  onChange={(e) => setFormData({ ...formData, loyaltyPointRate: parseFloat(e.target.value) || 10 })}
+                />
+                <p className="text-[10px] text-muted-foreground italic">Customer earns 1 point for every {formData.loyaltyPointRate} dollars spent.</p>
               </div>
             </div>
 
@@ -206,6 +234,15 @@ export default function StoreSettingsPage() {
           </form>
         </CardContent>
       </Card>
+
+      {store && path === '/store-settings' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+          <BrandsManager storeId={store.id} />
+          <RacksManager storeId={store.id} />
+          <ShelvesManager storeId={store.id} />
+          <AttributesManager storeId={store.id} />
+        </div>
+      )}
     </div>
   );
 }

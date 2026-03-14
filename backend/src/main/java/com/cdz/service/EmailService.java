@@ -8,4 +8,5 @@ public interface EmailService {
     void sendEmail(String to, String subject, String content, boolean isHtml);
 
     void sendLowStockAlert(Store store, List<Inventory> lowStockItems);
+    void sendOrderReceipt(String to, com.cdz.payload.dto.ReceiptDTO receipt);
 }

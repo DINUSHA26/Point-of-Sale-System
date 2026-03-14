@@ -20,4 +20,5 @@ public interface CustomerService {
 
     List<Customer> searchCustomer(String keyword) throws Exception;
 
+    Customer getCustomerByPhone(String phone, Long storeId);
 }

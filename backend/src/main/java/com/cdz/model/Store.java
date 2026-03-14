@@ -28,6 +28,7 @@ public class Store {
     private String description;
 
     private String storeType;
+    private Double loyaltyPointRate = 10.0; // Amount for 1 point
 
     @Enumerated(EnumType.STRING)
     private StoreStatus status;

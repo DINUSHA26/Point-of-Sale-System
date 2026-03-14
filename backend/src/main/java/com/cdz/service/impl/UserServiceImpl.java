@@ -17,6 +17,8 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final JwtProvider jwtProvider;
+    private final com.cdz.service.ImageUploadService imageUploadService;
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     @Override
     public User getUserFromJwtToken(String token) throws UserException {
@@ -62,8 +64,6 @@ public class UserServiceImpl implements UserService {
         return userRepository.findAll();
     }
 
-    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
-
     @Override
     public User updateUserProfile(User user, String fullName, String phone, String password,
             org.springframework.web.multipart.MultipartFile imageFile) throws java.io.IOException {
@@ -79,32 +79,8 @@ public class UserServiceImpl implements UserService {
         }
 
         if (imageFile != null && !imageFile.isEmpty()) {
-            String uploadDir = "uploads";
-            java.nio.file.Path uploadPath = java.nio.file.Paths.get(uploadDir);
-
-            if (!java.nio.file.Files.exists(uploadPath)) {
-                java.nio.file.Files.createDirectories(uploadPath);
-            }
-
-            String originalFilename = imageFile.getOriginalFilename();
-            String fileExtension = "";
-            if (originalFilename != null && originalFilename.contains(".")) {
-                fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
-            }
-
-            String fileName = "profile_" + user.getId() + "_" + System.currentTimeMillis() + fileExtension;
-
-            try (java.io.InputStream inputStream = imageFile.getInputStream()) {
-                java.nio.file.Path filePath = uploadPath.resolve(fileName);
-                java.nio.file.Files.copy(inputStream, filePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-
-                // Set the URL path (relative to server root)
-                // Assuming the server serves static files from /uploads/**
-                String fileUrl = "http://localhost:5000/uploads/" + fileName;
-                user.setProfileImage(fileUrl);
-            } catch (java.io.IOException ioe) {
-                throw new java.io.IOException("Could not save image file: " + fileName, ioe);
-            }
+            String fileUrl = imageUploadService.uploadImage(imageFile);
+            user.setProfileImage(fileUrl);
         }
 
         return userRepository.save(user);

@@ -7,4 +7,6 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
 
     @org.springframework.data.jpa.repository.Query("SELECT SUM(oi.quantity) FROM OrderItem oi WHERE oi.order.store.id = :storeId")
     Long sumQuantityByStoreId(Long storeId);
+
+    java.util.List<OrderItem> findByProductId(Long productId);
 }

@@ -33,9 +33,17 @@ public class CategoryServiceImpl implements CategoryService {
         Store store = storeRepository.findById(dto.getStoreId()).orElseThrow(
                 () -> new Exception("Store not found")
         );
+        Category parentCategory = null;
+        if (dto.getParentCategoryId() != null) {
+            parentCategory = categoryRepository.findById(dto.getParentCategoryId()).orElseThrow(
+                    () -> new Exception("Parent category not found")
+            );
+        }
+
         Category category = Category.builder()
                 .store(store)
                 .name(dto.getName())
+                .parent(parentCategory)
                 .build();
 
         checkAuthority(user, category.getStore());
