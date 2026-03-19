@@ -1,2 +1,0 @@
-﻿id	email
-2	manidudinusha@gmail.com

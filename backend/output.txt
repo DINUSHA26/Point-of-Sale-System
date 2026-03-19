@@ -1,2 +1,0 @@
-﻿id	email	password
-1	charith.ddm@gmail.com	$2a$10$TWy4/CojbO/Vgu/beVigWeiEZFd2VHSg7x.t1EPu4nT95k1SmrLJ.
