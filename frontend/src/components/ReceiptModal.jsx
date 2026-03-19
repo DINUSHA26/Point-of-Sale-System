@@ -74,6 +74,12 @@ export function ReceiptModal({ orderId, open, onClose }) {
                                     <span className="text-gray-600">Date:</span>
                                     <span>{receipt.orderDate && format(new Date(receipt.orderDate), 'dd/MM/yyyy HH:mm')}</span>
                                 </div>
+                                {receipt.parentOrderId && (
+                                    <div className="flex justify-between text-indigo-600 font-bold">
+                                        <span>Original Order:</span>
+                                        <span>#{receipt.parentOrderId}</span>
+                                    </div>
+                                )}
                                 {receipt.cashierName && (
                                     <div className="flex justify-between">
                                         <span className="text-gray-600">Cashier:</span>
@@ -110,19 +116,27 @@ export function ReceiptModal({ orderId, open, onClose }) {
                                                             -{item.discountPercentage}% (${item.discountAmount.toFixed(2)})
                                                         </div>
                                                     )}
-                                                </td>
-                                                <td className="text-center py-2">{item.quantity}</td>
-                                                <td className="text-right py-2">
-                                                    {item.discountAmount > 0 ? (
-                                                        <>
-                                                            <div className="line-through text-gray-400 text-[10px]">${item.originalPrice.toFixed(2)}</div>
-                                                            <div>${item.finalPrice.toFixed(2)}</div>
-                                                        </>
-                                                    ) : (
-                                                        <div>${item.finalPrice.toFixed(2)}</div>
+                                                    {item.returnStatus && item.returnStatus !== 'NOT_RETURNED' && (
+                                                        <div className={`text-[10px] font-bold mt-1 uppercase ${item.returnStatus === 'FULLY_RETURNED' ? 'text-red-600' : 'text-orange-600'}`}>
+                                                            {item.returnStatus.replace('_', ' ')}
+                                                            {item.linkedOrderId && ` (REF: #${item.linkedOrderId})`}
+                                                        </div>
                                                     )}
                                                 </td>
-                                                <td className="text-right py-2 font-medium">${item.lineTotal.toFixed(2)}</td>
+                                                <td className="text-center py-2">{item.quantity || 0}</td>
+                                                <td className={`text-right py-2 ${item.quantity < 0 ? 'text-red-500' : ''}`}>
+                                                    {item.discountAmount > 0 ? (
+                                                        <>
+                                                            <div className="line-through text-gray-400 text-[10px]">${(item.originalPrice || 0).toFixed(2)}</div>
+                                                            <div>${(item.finalPrice || 0).toFixed(2)}</div>
+                                                        </>
+                                                    ) : (
+                                                        <div>${(item.finalPrice || 0).toFixed(2)}</div>
+                                                    )}
+                                                </td>
+                                                <td className={`text-right py-2 font-medium ${item.lineTotal < 0 ? 'text-red-500' : ''}`}>
+                                                    {item.lineTotal < 0 ? `-$${Math.abs(item.lineTotal || 0).toFixed(2)}` : `$${(item.lineTotal || 0).toFixed(2)}`}
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -148,10 +162,36 @@ export function ReceiptModal({ orderId, open, onClose }) {
                                     <span>${receipt.totalAmount?.toFixed(2) || '0.00'}</span>
                                 </div>
 
-                                <div className="flex justify-between mt-4 pt-2 border-t border-gray-100">
-                                    <span className="text-gray-600">Payment Method:</span>
-                                    <span className="font-bold uppercase">{receipt.paymentType}</span>
+                                <div className="mt-4 pt-2 border-t border-gray-100 italic space-y-1">
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-600">Payment Method:</span>
+                                        <span className="font-bold uppercase text-xs">{receipt.paymentType.replace('_', ' ')}</span>
+                                    </div>
+                                    {receipt.payments && receipt.payments.length > 0 && (
+                                        <div className="text-[10px] text-gray-400 pl-2 border-l-2 border-gray-100 mt-1">
+                                            {receipt.payments.map((p, idx) => (
+                                                <div key={idx} className="mb-1 last:mb-0">
+                                                    <div className="flex justify-between">
+                                                        <span>{p.paymentType.replace('_', ' ')}:</span>
+                                                        <span>${p.amount.toFixed(2)}</span>
+                                                    </div>
+                                                    {p.paymentType === 'CASH' && p.cashTendered != null && (
+                                                        <div className="flex justify-between text-[9px] pl-2 text-gray-400 italic">
+                                                            <span>(Tendered: ${p.cashTendered.toFixed(2)})</span>
+                                                            <span>(Change: ${p.changeAmount.toFixed(2)})</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
+                                {receipt.customerStoreCredit !== null && receipt.customerStoreCredit !== undefined && (
+                                    <div className="flex justify-between text-[10px] text-indigo-600 font-bold bg-indigo-50 p-1 rounded mt-1 border border-indigo-100">
+                                        <span>Current Store Credit:</span>
+                                        <span>${receipt.customerStoreCredit.toFixed(2)}</span>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Footer */}
@@ -198,6 +238,6 @@ export function ReceiptModal({ orderId, open, onClose }) {
                     )}
                 </DialogFooter>
             </DialogContent>
-        </Dialog>
+        </Dialog >
     );
 }

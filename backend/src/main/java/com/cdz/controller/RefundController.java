@@ -21,8 +21,14 @@ public class RefundController {
 
     private final RefundService refundService;
 
+    @PostMapping("/process-return")
+    @Operation(summary = "Process a return and exchange")
+    public ResponseEntity<RefundDTO> processReturnAndExchange(@RequestBody com.cdz.payload.dto.ReturnRequestDTO request) throws Exception {
+        return ResponseEntity.ok(refundService.processReturnAndExchange(request));
+    }
+
     @PostMapping
-    @Operation(summary = "Create a refund")
+    @Operation(summary = "Create a refund (legacy)")
     public ResponseEntity<RefundDTO> createRefund(@RequestBody RefundDTO refundDTO) throws Exception {
         return ResponseEntity.ok(refundService.createRefund(refundDTO));
     }

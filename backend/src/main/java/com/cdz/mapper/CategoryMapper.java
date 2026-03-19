@@ -7,11 +7,12 @@ public class CategoryMapper {
 
 
     public static CategoryDTO toDTO(Category category) {
+        if (category == null) return null;
         return CategoryDTO.builder()
                 .id(category.getId())
                 .name(category.getName())
-                .storeId(category.getStore()!=null?category.getStore().getId():null)
-                .parentCategoryId(category.getParent()!=null?category.getParent().getId():null)
+                .storeId(category.getStore() != null ? category.getStore().getId() : null)
+                .parentCategoryId(category.getParent() != null ? category.getParent().getId() : null)
                 .build();
     }
 }

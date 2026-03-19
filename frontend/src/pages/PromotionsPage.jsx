@@ -256,11 +256,11 @@ export default function PromotionsPage() {
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label>Start Date</Label>
-                                <Input type="date" value={formData.startDate} onChange={e => setFormData({ ...formData, startDate: e.target.value })} />
+                                <Input type="date" className="[color-scheme:light] dark:[color-scheme:dark]" value={formData.startDate} onChange={e => setFormData({ ...formData, startDate: e.target.value })} />
                             </div>
                             <div className="space-y-2">
                                 <Label>End Date</Label>
-                                <Input type="date" value={formData.endDate} onChange={e => setFormData({ ...formData, endDate: e.target.value })} />
+                                <Input type="date" className="[color-scheme:light] dark:[color-scheme:dark]" value={formData.endDate} onChange={e => setFormData({ ...formData, endDate: e.target.value })} />
                             </div>
                         </div>
 

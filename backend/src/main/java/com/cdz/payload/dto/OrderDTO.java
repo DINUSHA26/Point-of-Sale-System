@@ -41,5 +41,7 @@ public class OrderDTO {
      */
     private String stripePaymentIntentId;
 
+    private Long parentOrderId;
+    private List<OrderPaymentDTO> payments;
     private List<OrderItemDTO> items;
 }

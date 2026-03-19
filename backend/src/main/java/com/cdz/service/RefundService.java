@@ -9,6 +9,8 @@ public interface RefundService {
 
     RefundDTO createRefund(RefundDTO refund) throws Exception;
 
+    com.cdz.payload.dto.RefundDTO processReturnAndExchange(com.cdz.payload.dto.ReturnRequestDTO request) throws Exception;
+
     List<RefundDTO> getAllRefunds() throws Exception;
 
     List<RefundDTO> getRefundByCashier(Long cashierId) throws Exception;

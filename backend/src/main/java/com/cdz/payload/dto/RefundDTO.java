@@ -15,12 +15,11 @@ public class RefundDTO {
     private OrderDTO order;
     private Long orderId;
 
-    private String  reason;
-
-    private Double  amount;
-
-
-//    private ShiftReport shiftReport;
+    private String reason;
+    private Double amount;
+    private String returnId;
+    private OrderDTO exchangeOrder;
+    private Double creditNoteIssued;
     private Long shiftReportId;
 
 

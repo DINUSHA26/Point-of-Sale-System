@@ -9,13 +9,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { Plus, Edit, Trash2, Loader2, AlertTriangle, Package } from 'lucide-react';
+import { Plus, Edit, Trash2, Loader2, AlertTriangle, Package, Search } from 'lucide-react';
+import { categoryAPI } from '../lib/api';
 
 export default function InventoryPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [inventory, setInventory] = useState([]);
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -23,10 +25,13 @@ export default function InventoryPage() {
   const [selectedInventory, setSelectedInventory] = useState(null);
   const [addStockAmount, setAddStockAmount] = useState('');
   const [viewMode, setViewMode] = useState('all'); // 'all' or 'low-stock'
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterCategory, setFilterCategory] = useState('all');
   const [editingInventory, setEditingInventory] = useState(null);
   const [formData, setFormData] = useState({
     productId: '',
     quantity: '',
+    damagedQuantity: 0,
     lowStockThreshold: 10,
   });
 
@@ -51,6 +56,7 @@ export default function InventoryPage() {
           setStore(null);
           setInventory([]);
           setProducts([]);
+          setCategories([]);
           return;
         }
         throw error;
@@ -58,12 +64,14 @@ export default function InventoryPage() {
       setStore(storeData);
 
       if (storeData?.id) {
-        const [inventoryResponse, productsResponse] = await Promise.all([
-          inventoryAPI.getByStore(storeData.id),
-          productAPI.getByStore(storeData.id),
+        const [inventoryResponse, productsResponse, categoriesResponse] = await Promise.all([
+          inventoryAPI.getByStore(storeData.id).catch(() => ({ data: [] })),
+          productAPI.getByStore(storeData.id).catch(() => ({ data: [] })),
+          categoryAPI.getByStore(storeData.id).catch(() => ({ data: [] })),
         ]);
         setInventory(inventoryResponse.data || []);
         setProducts(productsResponse.data || []);
+        setCategories(categoriesResponse.data || []);
       }
     } catch (error) {
       console.error('Error loading inventory:', error);
@@ -77,12 +85,45 @@ export default function InventoryPage() {
     }
   };
 
+  const filteredInventory = inventory.filter(inv => {
+    const p = inv.product;
+    if (!p) return false;
+
+    const matchSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.sku?.toLowerCase().includes(searchQuery.toLowerCase());
+
+    let matchCat = true;
+    if (filterCategory !== 'all') {
+      const selectedId = parseInt(filterCategory);
+      const getAllChildIds = (parentId) => {
+        let ids = [parentId];
+        categories
+          .filter(c => c.parentCategoryId === parentId)
+          .forEach(c => {
+            ids = [...ids, ...getAllChildIds(c.id)];
+          });
+        return ids;
+      };
+      const categoryFamily = getAllChildIds(selectedId);
+      const pCatId = p.category?.id || p.categoryId;
+      matchCat = categoryFamily.includes(pCatId);
+    }
+
+    const isLowStock = inv.quantity <= (inv.lowStockThreshold || 10);
+    const matchMode = viewMode === 'all' || (viewMode === 'low-stock' && isLowStock);
+
+    return matchSearch && matchCat && matchMode;
+  });
+
+  const lowStockCount = inventory.filter(inv => inv.quantity <= (inv.lowStockThreshold || 10)).length;
+
   const handleOpenDialog = (inv = null) => {
     if (inv) {
       setEditingInventory(inv);
       setFormData({
         productId: inv.product?.id || inv.productId || '',
         quantity: inv.quantity || '',
+        damagedQuantity: inv.damagedQuantity || 0,
         lowStockThreshold: inv.lowStockThreshold || 10,
       });
     } else {
@@ -90,6 +131,7 @@ export default function InventoryPage() {
       setFormData({
         productId: '',
         quantity: '',
+        damagedQuantity: 0,
         lowStockThreshold: 10,
       });
     }
@@ -138,6 +180,7 @@ export default function InventoryPage() {
         storeId: store.id,
         productId: parseInt(formData.productId),
         quantity: parseInt(formData.quantity),
+        damagedQuantity: parseInt(formData.damagedQuantity || 0),
         lowStockThreshold: parseInt(formData.lowStockThreshold),
       };
 
@@ -213,7 +256,6 @@ export default function InventoryPage() {
   }
 
   const lowStockItems = inventory.filter(inv => inv.quantity <= (inv.lowStockThreshold || 10));
-  const displayedInventory = viewMode === 'low-stock' ? lowStockItems : inventory;
 
   return (
     <div className="space-y-6">
@@ -228,37 +270,78 @@ export default function InventoryPage() {
         </Button>
       </div>
 
+      <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+        <Tabs value={viewMode} onValueChange={setViewMode} className="w-full md:w-auto">
+          <TabsList>
+            <TabsTrigger value="all">
+              <Package className="h-4 w-4 mr-2" />
+              All ({inventory.length})
+            </TabsTrigger>
+            <TabsTrigger value="low-stock">
+              <AlertTriangle className="h-4 w-4 mr-2" />
+              Low Stock ({lowStockCount})
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        <div className="flex items-center gap-4 w-full md:w-auto">
+          <div className="relative flex-1 md:w-[300px]">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search inventory..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+
+          <Select value={filterCategory} onValueChange={setFilterCategory}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              {(() => {
+                const buildFlatTree = (cats, parentId = null, depth = 0) => {
+                  let result = [];
+                  cats
+                    .filter(c => (c.parentCategoryId === parentId) || (parentId === null && !c.parentCategoryId))
+                    .forEach(c => {
+                      result.push({ ...c, depth });
+                      result = [...result, ...buildFlatTree(cats, c.id, depth + 1)];
+                    });
+                  return result;
+                };
+                return buildFlatTree(categories).map(c => (
+                  <SelectItem key={c.id} value={c.id.toString()}>
+                    {'\u00A0'.repeat(c.depth * 3)}
+                    {c.depth > 0 ? '↳ ' : ''}
+                    {c.name}
+                  </SelectItem>
+                ));
+              })()}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       {/* Low Stock Alert Banner */}
-      {lowStockItems.length > 0 && (
+      {lowStockCount > 0 && (
         <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-destructive" />
             <div>
               <h3 className="font-semibold text-destructive">Low Stock Alert</h3>
               <p className="text-sm text-muted-foreground mt-0.5">
-                {lowStockItems.length} product{lowStockItems.length > 1 ? 's are' : ' is'} running low on stock
+                {lowStockCount} product{lowStockCount > 1 ? 's are' : ' is'} running low on stock
               </p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Filter Tabs */}
-      <Tabs value={viewMode} onValueChange={setViewMode}>
-        <TabsList>
-          <TabsTrigger value="all">
-            <Package className="h-4 w-4 mr-2" />
-            All ({inventory.length})
-          </TabsTrigger>
-          <TabsTrigger value="low-stock">
-            <AlertTriangle className="h-4 w-4 mr-2" />
-            Low Stock ({lowStockItems.length})
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {displayedInventory.map((inv) => (
+        {filteredInventory.map((inv) => (
           <Card key={inv.id} className={inv.quantity <= (inv.lowStockThreshold || 10) ? 'border-destructive/50' : ''}>
             <CardContent className="p-4">
               <div className="flex items-start justify-between gap-4">
@@ -285,14 +368,22 @@ export default function InventoryPage() {
                     <p className="text-sm text-muted-foreground mt-1">
                       SKU: {inv.product?.sku || 'N/A'}
                     </p>
-                    <div className="mt-2">
-                      <span className={`text-2xl font-bold ${inv.quantity <= (inv.lowStockThreshold || 10) ? 'text-destructive' : 'text-primary'
-                        }`}>
-                        {inv.quantity}
-                      </span>
-                      <span className="text-sm text-muted-foreground ml-2">units</span>
+                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2">
+                      <div>
+                        <span className={`text-2xl font-bold ${inv.quantity <= (inv.lowStockThreshold || 10) ? 'text-destructive' : 'text-primary'
+                          }`}>
+                          {inv.quantity}
+                        </span>
+                        <span className="text-sm text-muted-foreground ml-1">Sellable</span>
+                      </div>
+                      <div>
+                        <span className="text-2xl font-bold text-orange-500">
+                          {inv.damagedQuantity || 0}
+                        </span>
+                        <span className="text-sm text-muted-foreground ml-1">Damaged</span>
+                      </div>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-xs text-muted-foreground mt-2">
                       Alert threshold: {inv.lowStockThreshold || 10}
                     </p>
                     {inv.quantity <= (inv.lowStockThreshold || 10) && (
@@ -361,13 +452,23 @@ export default function InventoryPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="quantity">Quantity *</Label>
+              <Label htmlFor="quantity">Sellable Quantity *</Label>
               <Input
                 id="quantity"
                 type="number"
                 value={formData.quantity}
                 onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
                 required
+                min="0"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="damagedQuantity">Damaged / Quarantine Stock</Label>
+              <Input
+                id="damagedQuantity"
+                type="number"
+                value={formData.damagedQuantity}
+                onChange={(e) => setFormData({ ...formData, damagedQuantity: e.target.value })}
                 min="0"
               />
             </div>

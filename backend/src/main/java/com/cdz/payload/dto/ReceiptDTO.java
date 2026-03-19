@@ -13,6 +13,7 @@ public class ReceiptDTO {
     private Long orderId;
     private String receiptNumber;
     private LocalDateTime orderDate;
+    private Long parentOrderId; // Reference to original bill if this is an exchange
 
     // Store Information
     private String storeName;
@@ -31,9 +32,11 @@ public class ReceiptDTO {
 
     // Payment Details
     private String paymentType;
+    private List<OrderPaymentDTO> payments;
     private Double subtotal;
     private Double totalDiscount;
     private Double totalAmount;
+    private Double customerStoreCredit;
 
     @Data
     @Builder
@@ -46,5 +49,7 @@ public class ReceiptDTO {
         private Double discountAmount;
         private Double finalPrice;
         private Double lineTotal;
+        private String returnStatus;
+        private Long linkedOrderId;
     }
 }

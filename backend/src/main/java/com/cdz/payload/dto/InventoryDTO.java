@@ -17,7 +17,7 @@ public class InventoryDTO {
     private Long productId;
 
     private Integer quantity;
-
+    private Integer damagedQuantity;
     private Integer lowStockThreshold;
 
     private LocalDateTime lastUpdate;

@@ -25,7 +25,12 @@ public class Customer {
 
     private String phone;
     private String address;
+    
+    @Builder.Default
     private Integer loyaltyPoints = 0;
+
+    @Builder.Default
+    private Double storeCredit = 0.0;
 
     @ManyToOne
     @com.fasterxml.jackson.annotation.JsonIgnoreProperties("storeAdmin")

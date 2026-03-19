@@ -33,6 +33,7 @@ public class ProductServiceImpl implements ProductService {
         private final com.cdz.repository.ShiftReportRepository shiftReportRepository;
 
         @Override
+        @org.springframework.transaction.annotation.Transactional
         public ProductDTO createProduct(ProductDTO productDTO, User user) throws Exception {
                 Store store;
                 if (user.getStore() != null) {
@@ -79,6 +80,7 @@ public class ProductServiceImpl implements ProductService {
         }
 
         @Override
+        @org.springframework.transaction.annotation.Transactional
         public ProductDTO updateProduct(Long id, ProductDTO productDTO, User user) throws Exception {
                 Product product = productRepository.findById(id).orElseThrow(
                                 () -> new Exception("product not found"));
@@ -128,6 +130,24 @@ public class ProductServiceImpl implements ProductService {
                         product.setCategory(category);
                 }
 
+                // Handle Variants for Update
+                if (productDTO.isHasVariants() && productDTO.getVariants() != null) {
+                    // Simple strategy: Clear old variants and add new ones (or complex sync)
+                    List<com.cdz.model.ProductVariant> oldVariants = variantRepository.findByProductId(id);
+                    if (oldVariants != null) variantRepository.deleteAll(oldVariants);
+                    
+                    for (com.cdz.payload.dto.ProductVariantDTO varDto : productDTO.getVariants()) {
+                        com.cdz.model.ProductVariant variant = com.cdz.model.ProductVariant.builder()
+                                .product(product)
+                                .sku(varDto.getSku())
+                                .sellingPrice(varDto.getSellingPrice())
+                                .mrp(varDto.getMrp())
+                                .attributeValues(varDto.getAttributeValues())
+                                .build();
+                        variantRepository.save(variant);
+                    }
+                }
+
                 Product savedProduct = productRepository.save(product);
                 return ProductMapper.toDTO(savedProduct);
         }
@@ -165,7 +185,6 @@ public class ProductServiceImpl implements ProductService {
                 List<com.cdz.model.OrderItem> affectedOrderItems = orderItemRepository.findByProductId(id);
                 if (affectedOrderItems != null && !affectedOrderItems.isEmpty()) {
                         for (com.cdz.model.OrderItem oi : affectedOrderItems) {
-                                // Ensure historical name is saved if it wasn't already (for backwards compatibility with old records)
                                 if (oi.getProductName() == null) {
                                         oi.setProductName(product.getName());
                                         oi.setProductSku(product.getSku());
@@ -180,7 +199,7 @@ public class ProductServiceImpl implements ProductService {
                 if (affectedReports != null && !affectedReports.isEmpty()) {
                         for (com.cdz.model.ShiftReport report : affectedReports) {
                                 if (report.getTopSellingProducts() != null) {
-                                        report.getTopSellingProducts().removeIf(p -> p.getId().equals(id));
+                                        report.getTopSellingProducts().removeIf(p -> p != null && p.getId() != null && p.getId().equals(id));
                                 }
                         }
                         shiftReportRepository.saveAll(affectedReports);
@@ -192,6 +211,7 @@ public class ProductServiceImpl implements ProductService {
         }
 
         @Override
+        @org.springframework.transaction.annotation.Transactional(readOnly = true)
         public List<ProductDTO> getProductsByStoreId(Long storeId) {
 
                 List<Product> products = productRepository.findByStoreId(storeId);
@@ -201,6 +221,7 @@ public class ProductServiceImpl implements ProductService {
         }
 
         @Override
+        @org.springframework.transaction.annotation.Transactional(readOnly = true)
         public List<ProductDTO> searchByKeyword(Long storeId, String keyword) {
                 List<Product> products = productRepository.searchByKeyword(storeId, keyword);
                 return products.stream()

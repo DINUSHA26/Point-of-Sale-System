@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { productAPI, customerAPI, orderAPI, storeAPI, billingAPI, categoryAPI } from '../lib/api';
+import { productAPI, customerAPI, orderAPI, storeAPI, billingAPI, categoryAPI, refundAPI } from '../lib/api';
 import { useToast } from '../components/ui/use-toast';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -28,7 +28,10 @@ export default function POSPage() {
   const [customers, setCustomers] = useState([]);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [paymentType, setPaymentType] = useState('CASH');
+  const [secondaryPaymentType, setSecondaryPaymentType] = useState(null);
+  const [cashTendered, setCashTendered] = useState('');
   const [loading, setLoading] = useState(true);
+  const [exchangeData, setExchangeData] = useState(null);
 
   // Receipt State
   const [receiptOrderId, setReceiptOrderId] = useState(null);
@@ -39,6 +42,33 @@ export default function POSPage() {
 
   useEffect(() => {
     loadStoreAndProducts();
+    const storedExchange = localStorage.getItem('exchangeData');
+    if (storedExchange) {
+      try {
+        const parsed = JSON.parse(storedExchange);
+        setExchangeData(parsed);
+        if (parsed.customerId) {
+          setSelectedCustomer({ id: parsed.customerId, fullName: parsed.customerName });
+          setIsCustomerSectionOpen(true);
+        } else if (parsed.customerName) {
+          setCustomerName(parsed.customerName);
+          setIsCustomerSectionOpen(true);
+        }
+
+        const returnCartItems = parsed.items.map(retItem => ({
+          isReturn: true,
+          originalOrderItemId: retItem.orderItemId,
+          condition: retItem.condition,
+          product: retItem.product,
+          quantity: -retItem.quantity,
+          price: retItem.price,
+          originalPrice: retItem.originalPrice
+        }));
+        setCart(returnCartItems);
+      } catch (e) {
+        console.error("Failed to parse exchange data", e);
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -71,7 +101,7 @@ export default function POSPage() {
 
       if (storeData?.id) {
         const [productsResponse, categoriesResponse] = await Promise.all([
-          productAPI.getByStore(storeData.id),
+          productAPI.getByStore(storeData.id).catch(() => ({ data: [] })),
           categoryAPI.getByStore(storeData.id).catch(() => ({ data: [] })),
         ]);
         setProducts(productsResponse.data || []);
@@ -94,7 +124,24 @@ export default function POSPage() {
     let filtered = products;
 
     if (selectedCategory !== 'all') {
-      filtered = filtered.filter(p => p.category?.id === parseInt(selectedCategory));
+      const selectedId = parseInt(selectedCategory);
+
+      // Find all sub-category IDs recursively
+      const getAllChildIds = (parentId) => {
+        let ids = [parentId];
+        categories
+          .filter(c => c.parentCategoryId === parentId)
+          .forEach(c => {
+            ids = [...ids, ...getAllChildIds(c.id)];
+          });
+        return ids;
+      };
+
+      const categoryFamily = getAllChildIds(selectedId);
+      filtered = filtered.filter(p => {
+        const pCatId = p.category?.id || p.categoryId;
+        return categoryFamily.includes(pCatId);
+      });
     }
 
     if (searchQuery) {
@@ -108,7 +155,7 @@ export default function POSPage() {
   };
 
   const addToCart = (product) => {
-    const existingItem = cart.find(item => item.product.id === product.id);
+    const existingItem = cart.find(item => item.product.id === product.id && !item.isReturn);
 
     // Calculate discounted price
     const basePrice = product.sellingPrice || product.mrp || 0;
@@ -131,9 +178,10 @@ export default function POSPage() {
     }
   };
 
-  const updateCartQuantity = (productId, delta) => {
+  const updateCartQuantity = (productId, delta, isReturn = false) => {
     setCart(cart.map(item => {
-      if (item.product.id === productId) {
+      if (item.product.id === productId && !!item.isReturn === !!isReturn) {
+        if (isReturn) return item; // Don't allow changing return quantity in POS easily
         const newQuantity = item.quantity + delta;
         if (newQuantity <= 0) return null;
         return { ...item, quantity: newQuantity };
@@ -142,8 +190,8 @@ export default function POSPage() {
     }).filter(Boolean));
   };
 
-  const removeFromCart = (productId) => {
-    setCart(cart.filter(item => item.product.id !== productId));
+  const removeFromCart = (productId, isReturn = false) => {
+    setCart(cart.filter(item => !(item.product.id === productId && !!item.isReturn === !!isReturn)));
   };
 
   const getTotal = () => {
@@ -167,12 +215,41 @@ export default function POSPage() {
       });
       return;
     }
+    setPaymentType('CASH');
+    setSecondaryPaymentType(null);
+    setCashTendered('');
     setPaymentDialogOpen(true);
   };
 
   const processPayment = async () => {
+    const totalAmount = getTotal();
+
+    // Validation for cash payments
+    const isCashPayment = paymentType === 'CASH' || secondaryPaymentType === 'CASH';
+    const amountToPayInCash = paymentType === 'CASH'
+      ? totalAmount
+      : (secondaryPaymentType === 'CASH' ? totalAmount - (selectedCustomer?.storeCredit || 0) : 0);
+
+    if (isCashPayment) {
+      if (!cashTendered || cashTendered.trim() === '') {
+        toast({
+          title: "Cash Payment Error",
+          description: "Please enter the cash amount provided by the customer.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (Number(cashTendered) < amountToPayInCash) {
+        toast({
+          title: "Cash Payment Error",
+          description: `Cash tendered ($${cashTendered}) is less than amount due ($${amountToPayInCash.toFixed(2)})`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     try {
-      const totalAmount = getTotal();
       const orderData = {
         storeId: store.id,
         customerId: selectedCustomer?.id || null,
@@ -181,24 +258,72 @@ export default function POSPage() {
         cashier: {
           id: user.id,
         },
-        paymentType: paymentType,
-        totalAmount: totalAmount,
+        paymentType: paymentType === 'STORE_CREDIT' && secondaryPaymentType ? 'SPLIT' : paymentType,
+        totalAmount: totalAmount < 0 ? 0 : totalAmount,
+        payments: paymentType === 'STORE_CREDIT' && secondaryPaymentType ? [
+          { paymentType: 'STORE_CREDIT', amount: Number(selectedCustomer?.storeCredit || 0) },
+          {
+            paymentType: secondaryPaymentType,
+            amount: Number(totalAmount - (selectedCustomer?.storeCredit || 0)),
+            cashTendered: secondaryPaymentType === 'CASH' ? Number(cashTendered) : null,
+            changeAmount: secondaryPaymentType === 'CASH' ? Number(cashTendered) - (totalAmount - (selectedCustomer?.storeCredit || 0)) : null
+          }
+        ] : [
+          {
+            paymentType: paymentType,
+            amount: Number(totalAmount),
+            cashTendered: paymentType === 'CASH' ? Number(cashTendered) : null,
+            changeAmount: paymentType === 'CASH' ? Number(cashTendered) - totalAmount : null
+          }
+        ],
         items: cart.map(item => ({
           productId: item.product.id,
           quantity: item.quantity,
           price: item.price,
+          isReturn: item.isReturn
         })),
       };
 
-      const response = await orderAPI.create(orderData);
+      let response;
+      if (exchangeData) {
+        const payload = {
+          originalOrderId: exchangeData.originalOrderId,
+          returnItems: cart.filter(i => i.isReturn).map(i => ({
+            orderItemId: i.originalOrderItemId,
+            quantity: Math.abs(i.quantity),
+            condition: i.condition
+          })),
+          reason: exchangeData.reason || 'Exchange checkout',
+          refundAmount: totalAmount < 0 ? Math.abs(totalAmount) : 0,
+          issueStoreCredit: totalAmount < 0,
+          exchangeOrder: cart.filter(i => !i.isReturn).length > 0 ? {
+            ...orderData,
+            totalAmount: totalAmount > 0 ? totalAmount : 0,
+            items: cart.map(i => ({
+              productId: i.product.id,
+              quantity: i.quantity,
+              price: i.price
+            }))
+          } : null
+        };
+
+        const refRes = await refundAPI.processReturn(payload);
+        response = { data: refRes.data.exchangeOrder || { id: refRes.data.id, isRefund: true } };
+        localStorage.removeItem('exchangeData');
+        setExchangeData(null);
+      } else {
+        response = await orderAPI.create(orderData);
+      }
 
       toast({
         title: "Success",
-        description: "Order created successfully!",
+        description: exchangeData ? "Exchange & Order processed successfully!" : "Order created successfully!",
       });
 
-      // Show receipt
-      setReceiptOrderId(response.data.id);
+      // Show receipt or refund note
+      if (!response.data.isRefund) {
+        setReceiptOrderId(response.data.id || response.data.orderId);
+      }
       setShowReceipt(true);
 
       // Clear cart and reset state
@@ -285,11 +410,25 @@ export default function POSPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id.toString()}>
-                      {cat.name}
-                    </SelectItem>
-                  ))}
+                  {(() => {
+                    const buildFlatTree = (cats, parentId = null, depth = 0) => {
+                      let result = [];
+                      cats
+                        .filter(c => (c.parentCategoryId === parentId) || (parentId === null && !c.parentCategoryId))
+                        .forEach(c => {
+                          result.push({ ...c, depth });
+                          result = [...result, ...buildFlatTree(cats, c.id, depth + 1)];
+                        });
+                      return result;
+                    };
+                    return buildFlatTree(categories).map(cat => (
+                      <SelectItem key={cat.id} value={cat.id.toString()}>
+                        {'\u00A0'.repeat(cat.depth * 3)}
+                        {cat.depth > 0 ? '↳ ' : ''}
+                        {cat.name}
+                      </SelectItem>
+                    ));
+                  })()}
                 </SelectContent>
               </Select>
             </div>
@@ -304,7 +443,7 @@ export default function POSPage() {
                   <button
                     key={product.id}
                     onClick={() => addToCart(product)}
-                    className="p-3 border rounded-lg hover:bg-gray-50 text-left transition-colors relative flex flex-col bg-card"
+                    className="p-3 border rounded-lg hover:border-emerald-500/50 hover:bg-emerald-50/5 dark:hover:bg-emerald-500/10 text-left transition-all duration-200 relative flex flex-col bg-card hover:shadow-lg hover:shadow-emerald-500/10 group"
                   >
                     {hasDiscount && (
                       <span className="absolute top-2 right-2 z-10 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-500/20 text-green-600 border border-green-500/30">
@@ -320,7 +459,7 @@ export default function POSPage() {
                         <span className="text-muted-foreground text-xs">No Image</span>
                       </div>
                     )}
-                    <div className="font-medium text-sm pr-8 leading-tight mb-1">{product.name}</div>
+                    <div className="font-medium text-sm pr-8 leading-tight mb-1 group-hover:text-emerald-500 transition-colors uppercase tracking-tight">{product.name}</div>
                     {hasDiscount ? (
                       <div className="mt-1">
                         <div className="text-[10px] text-muted-foreground line-through">
@@ -331,12 +470,12 @@ export default function POSPage() {
                         </div>
                       </div>
                     ) : (
-                      <div className="text-xs text-muted-foreground mt-1">
+                      <div className="text-xs text-muted-foreground mt-1 group-hover:text-foreground/80 transition-colors">
                         ${basePrice.toFixed(2)}
                       </div>
                     )}
                     {product.sku && (
-                      <div className="text-xs text-muted-foreground">SKU: {product.sku}</div>
+                      <div className="text-xs text-muted-foreground group-hover:text-foreground/60 transition-colors">SKU: {product.sku}</div>
                     )}
                   </button>
                 );
@@ -475,8 +614,9 @@ export default function POSPage() {
                       )}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
+                          {item.isReturn && <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-500/20 text-red-600 border border-red-500/30 flex-shrink-0">RETURN</span>}
                           <div className="font-medium text-sm truncate">{item.product.name}</div>
-                          {hasDiscount && (
+                          {hasDiscount && !item.isReturn && (
                             <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-500/20 text-green-600 border border-green-500/30 flex-shrink-0">
                               {item.product.discountPercentage}% OFF
                             </span>
@@ -490,28 +630,32 @@ export default function POSPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-1 flex-shrink-0">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="h-7 w-7"
-                          onClick={() => updateCartQuantity(item.product.id, -1)}
-                        >
-                          <Minus className="h-3 w-3" />
-                        </Button>
-                        <span className="text-sm w-8 text-center">{item.quantity}</span>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="h-7 w-7"
-                          onClick={() => updateCartQuantity(item.product.id, 1)}
-                        >
-                          <Plus className="h-3 w-3" />
-                        </Button>
+                        {!item.isReturn && (
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => updateCartQuantity(item.product.id, -1, false)}
+                          >
+                            <Minus className="h-3 w-3" />
+                          </Button>
+                        )}
+                        <span className="text-sm w-8 text-center">{Math.abs(item.quantity)}</span>
+                        {!item.isReturn && (
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => updateCartQuantity(item.product.id, 1, false)}
+                          >
+                            <Plus className="h-3 w-3" />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"
                           className="h-7 w-7 text-destructive"
-                          onClick={() => removeFromCart(item.product.id)}
+                          onClick={() => removeFromCart(item.product.id, item.isReturn)}
                         >
                           <Trash2 className="h-3 w-3" />
                         </Button>
@@ -583,14 +727,88 @@ export default function POSPage() {
                     Card
                   </div>
                 </SelectItem>
+                <SelectItem value="STORE_CREDIT">
+                  <div className="flex items-center gap-2">
+                    <Smartphone className="h-4 w-4" />
+                    Store Credit
+                    {selectedCustomer && (
+                      <span className="text-[10px] text-green-600 ml-1">
+                        (Avl: ${selectedCustomer.storeCredit?.toFixed(2) || '0.00'})
+                      </span>
+                    )}
+                  </div>
+                </SelectItem>
               </SelectContent>
             </Select>
+
+            {paymentType === 'STORE_CREDIT' && selectedCustomer && (
+              <div className="space-y-3">
+                <div className={`p-2 rounded text-xs ${(selectedCustomer.storeCredit || 0) < getTotal() ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-green-50 text-green-600 border border-green-200'}`}>
+                  {(selectedCustomer.storeCredit || 0) < getTotal()
+                    ? `Insufficient Credit! Missing: $${(getTotal() - (selectedCustomer.storeCredit || 0)).toFixed(2)}`
+                    : `Remaining Credit after purchase: $${((selectedCustomer.storeCredit || 0) - getTotal()).toFixed(2)}`
+                  }
+                </div>
+
+                {(selectedCustomer.storeCredit || 0) < getTotal() && (
+                  <div className="space-y-2 p-2 border rounded-md bg-white">
+                    <Label className="text-[10px] font-bold uppercase text-gray-500">Remainder Payment Method</Label>
+                    <Select value={secondaryPaymentType} onValueChange={setSecondaryPaymentType}>
+                      <SelectTrigger className="h-8">
+                        <SelectValue placeholder="Select Method" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="CASH">Cash</SelectItem>
+                        <SelectItem value="CARD">Card</SelectItem>
+                        <SelectItem value="UPI">UPI</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Cash Tendered Input */}
+            {(paymentType === 'CASH' || (paymentType === 'STORE_CREDIT' && secondaryPaymentType === 'CASH')) && (
+              <div className="space-y-2 p-3 border rounded-lg bg-orange-50/30 border-orange-100">
+                <div className="flex justify-between items-center">
+                  <Label className="text-xs font-bold text-orange-700">CASH TENDERED</Label>
+                  <span className="text-[10px] text-orange-600 font-medium">
+                    Due: ${paymentType === 'CASH' ? getTotal().toFixed(2) : (getTotal() - (selectedCustomer?.storeCredit || 0)).toFixed(2)}
+                  </span>
+                </div>
+                <div className="relative">
+                  <DollarSign className="absolute left-2 top-2.5 h-4 w-4 text-orange-400" />
+                  <Input
+                    type="number"
+                    placeholder="Enter amount provided"
+                    className="pl-8 border-orange-200 focus:ring-orange-500"
+                    value={cashTendered}
+                    onChange={(e) => setCashTendered(e.target.value)}
+                    autoFocus
+                  />
+                </div>
+                {cashTendered && Number(cashTendered) >= (paymentType === 'CASH' ? getTotal() : (getTotal() - (selectedCustomer?.storeCredit || 0))) && (
+                  <div className="flex justify-between items-center pt-1 border-t border-orange-200/50 mt-1">
+                    <span className="text-xs font-bold text-green-700">CHANGE DUE:</span>
+                    <span className="text-lg font-black text-green-700">
+                      ${(Number(cashTendered) - (paymentType === 'CASH' ? getTotal() : (getTotal() - (selectedCustomer?.storeCredit || 0)))).toFixed(2)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="p-4 bg-gray-50 rounded-lg">
               <div className="flex justify-between text-lg font-bold">
                 <span>Total Amount:</span>
                 <span>${getTotal().toFixed(2)}</span>
               </div>
+              {getTotal() < 0 && (
+                <div className="mt-2 text-xs font-bold text-indigo-600 bg-indigo-50 p-2 rounded border border-indigo-200">
+                  REFUND BALANCE: ${Math.abs(getTotal()).toFixed(2)} will be issued as Store Credit to {selectedCustomer?.fullName || 'the customer'}.
+                </div>
+              )}
             </div>
           </div>
           <DialogFooter>

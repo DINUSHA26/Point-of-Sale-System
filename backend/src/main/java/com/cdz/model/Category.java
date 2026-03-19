@@ -18,9 +18,12 @@ public class Category {
 
     private String name;
 
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne
     @JoinColumn(name = "parent_id")
     private Category parent;
+
+    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<Category> children = new java.util.ArrayList<>();
 
     @ManyToOne
     private Store store;

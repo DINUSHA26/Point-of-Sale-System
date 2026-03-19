@@ -3,5 +3,7 @@ package com.cdz.domain;
 public enum PaymentType {
     CASH,
     UPI,
-    CARD
+    CARD,
+    STORE_CREDIT,
+    SPLIT
 }

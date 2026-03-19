@@ -23,5 +23,7 @@ public class OrderItemDTO {
     private String productSku;
 
     private Long orderId;
+    private String returnStatus;
+    private Long linkedOrderId;
 
 }

@@ -31,6 +31,8 @@ public class OrderItemMapper {
                 .productName(item.getProductName() != null ? item.getProductName() : (item.getProduct() != null ? item.getProduct().getName() : "Unknown Product"))
                 .productSku(item.getProductSku() != null ? item.getProductSku() : (item.getProduct() != null ? item.getProduct().getSku() : ""))
                 .product(productDTO)
+                .returnStatus(item.getReturnStatus() != null ? item.getReturnStatus().name() : null)
+                .linkedOrderId(item.getLinkedOrderId())
                 .build();
     }
 }

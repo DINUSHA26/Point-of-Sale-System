@@ -44,11 +44,17 @@ public class ReportServiceImpl implements ReportService {
                             .sum();
                     double avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
-                    // Payment Breakdown
+                    // Payment Breakdown (Corrected for Split Payments)
                     Map<String, Double> paymentBreakdown = dailyOrders.stream()
+                            .flatMap(o -> (o.getPayments() != null && !o.getPayments().isEmpty()) 
+                                ? o.getPayments().stream() 
+                                : java.util.stream.Stream.of(com.cdz.model.OrderPayment.builder()
+                                    .paymentType(o.getPaymentType() != null ? o.getPaymentType() : com.cdz.domain.PaymentType.CASH)
+                                    .amount(o.getTotalAmount())
+                                    .build()))
                             .collect(Collectors.groupingBy(
-                                    o -> o.getPaymentType() != null ? o.getPaymentType().name() : "OTHER",
-                                    Collectors.summingDouble(Order::getTotalAmount)
+                                    p -> p.getPaymentType().name(),
+                                    Collectors.summingDouble(p -> p.getAmount() != null ? p.getAmount() : 0.0)
                             ));
 
                     return DailySalesReportDTO.builder()

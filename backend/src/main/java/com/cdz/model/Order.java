@@ -40,11 +40,17 @@ public class Order {
     @ManyToOne
     private Customer customer;
 
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
+    private List<OrderPayment> payments;
+
     @Enumerated(EnumType.STRING)
+    @Column(length = 50)
     private PaymentType paymentType;
 
     /** Stripe PaymentIntent id when paymentType is CARD (for refunds). */
     private String stripePaymentIntentId;
+
+    private Long parentOrderId; // ID of the original order if this is an exchange/return bill
 
     @PrePersist
     protected void onCreate() {

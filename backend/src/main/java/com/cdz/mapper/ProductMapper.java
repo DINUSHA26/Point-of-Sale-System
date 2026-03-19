@@ -25,6 +25,7 @@ public class ProductMapper {
                 .shelfName(product.getShelf() != null ? product.getShelf().getName() : null)
                 .hasVariants(product.isHasVariants())
                 .category(CategoryMapper.toDTO(product.getCategory()))
+                .categoryId(product.getCategory() != null ? product.getCategory().getId() : null)
                 .storeId(product.getStore() != null ? product.getStore().getId() : null)
                 .image(product.getImage())
                 .createdAt(product.getCreatedAt())

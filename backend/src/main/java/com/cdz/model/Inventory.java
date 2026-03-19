@@ -39,6 +39,10 @@ public class Inventory {
     @Column(nullable = false)
     private Integer quantity;
 
+    @Column(nullable = false, columnDefinition = "integer default 0")
+    @Builder.Default
+    private Integer damagedQuantity = 0;
+
     @Column(nullable = true)
     private Integer lowStockThreshold = 10; // Default threshold of 10 units
 

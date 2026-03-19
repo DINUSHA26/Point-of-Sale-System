@@ -268,9 +268,20 @@ export default function DashboardLayout() {
                 <Menu className="h-5 w-5" />
               </Button>
               <div className="hidden sm:block">
-                <h2 className="text-lg font-semibold text-foreground">
-                  {navigation.find(n => n.href === location.pathname)?.name || 'Dashboard'}
-                </h2>
+                {location.pathname === '/pos' ? (
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                      <ShoppingCart className="h-4.5 w-4.5" />
+                    </div>
+                    <h2 className="text-lg font-bold bg-gradient-to-r from-emerald-500 to-teal-600 bg-clip-text text-transparent">
+                      POS Terminal
+                    </h2>
+                  </div>
+                ) : (
+                  <h2 className="text-lg font-semibold text-foreground">
+                    {navigation.find(n => n.href === location.pathname)?.name || 'Dashboard'}
+                  </h2>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-3">

@@ -14,6 +14,7 @@ public class InventoryMapper {
                 .productId(inventory.getProduct() != null ? inventory.getProduct().getId() : null)
                 .product(inventory.getProduct() != null ? ProductMapper.toDTO(inventory.getProduct()) : null)
                 .quantity(inventory.getQuantity())
+                .damagedQuantity(inventory.getDamagedQuantity())
                 .lowStockThreshold(inventory.getLowStockThreshold())
                 .build();
     }
@@ -23,6 +24,7 @@ public class InventoryMapper {
                 .store(store)
                 .product(product)
                 .quantity(inventoryDTO.getQuantity())
+                .damagedQuantity(inventoryDTO.getDamagedQuantity() != null ? inventoryDTO.getDamagedQuantity() : 0)
                 .build();
     }
 }

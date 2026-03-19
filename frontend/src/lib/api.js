@@ -146,6 +146,12 @@ export const billingAPI = {
     api.post('/api/billing/refund', { paymentIntentId, amountCents, reason }),
 };
 
+// Refund APIs
+export const refundAPI = {
+  create: (data) => api.post('/api/refunds', data),
+  processReturn: (data) => api.post('/api/refunds/process-return', data),
+};
+
 // Image Upload API
 export const imageAPI = {
   upload: (file) => {

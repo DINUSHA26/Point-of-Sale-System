@@ -32,6 +32,7 @@ package com.cdz.mapper;
 import com.cdz.model.Order;
 import com.cdz.payload.dto.OrderDTO;
 import com.cdz.payload.dto.OrderItemDTO;
+import com.cdz.payload.dto.OrderPaymentDTO;
 
 import java.util.Collections;
 import java.util.List;
@@ -57,6 +58,13 @@ public class OrderMapper {
                         .collect(Collectors.toList())
                 : Collections.emptyList();
 
+        var paymentDTOs = (order.getPayments() != null)
+                ? order.getPayments().stream()
+                        .filter(Objects::nonNull)
+                        .map(OrderPaymentMapper::toDTO)
+                        .collect(Collectors.toList())
+                : Collections.<OrderPaymentDTO>emptyList();
+
         return OrderDTO.builder()
                 .id(order.getId())
                 .totalAmount(order.getTotalAmount())
@@ -71,6 +79,8 @@ public class OrderMapper {
 
                 .paymentType(order.getPaymentType())
                 .stripePaymentIntentId(order.getStripePaymentIntentId())
+                .parentOrderId(order.getParentOrderId())
+                .payments(paymentDTOs)
                 .items((List<OrderItemDTO>) itemDTOs)
                 .build();
     }

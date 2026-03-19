@@ -173,7 +173,7 @@ export default function ReportsPage() {
                                             type="date"
                                             value={dateRange.startDate}
                                             onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
-                                            className="bg-background/50 border-border/50 focus:border-primary/50"
+                                            className="bg-background/50 border-border/50 focus:border-primary/50 [color-scheme:light] dark:[color-scheme:dark]"
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -183,7 +183,7 @@ export default function ReportsPage() {
                                             type="date"
                                             value={dateRange.endDate}
                                             onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
-                                            className="bg-background/50 border-border/50 focus:border-primary/50"
+                                            className="bg-background/50 border-border/50 focus:border-primary/50 [color-scheme:light] dark:[color-scheme:dark]"
                                         />
                                     </div>
                                 </div>

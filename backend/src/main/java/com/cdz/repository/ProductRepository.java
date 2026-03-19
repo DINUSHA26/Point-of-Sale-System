@@ -11,6 +11,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
         List<Product> findByStoreId(Long storeId);
 
+        List<Product> findByCategoryId(Long categoryId);
+
         long countByStoreId(Long storeId);
 
         @Query("SELECT p FROM Product p " +

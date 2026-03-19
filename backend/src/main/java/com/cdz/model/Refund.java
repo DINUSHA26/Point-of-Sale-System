@@ -23,9 +23,23 @@ public class Refund {
     @ManyToOne
     private Order order;
 
-    private String  reason;
+    private String reason;
 
-    private Double  amount;
+    private Double amount;
+
+    private String returnId;
+
+    @ManyToOne
+    private Order exchangeOrder;
+
+    @OneToMany(mappedBy = "refund", cascade = CascadeType.ALL)
+    private java.util.List<ReturnItem> returnItems;
+
+    @ManyToOne
+    private Customer customer;
+
+    @Builder.Default
+    private Double creditNoteIssued = 0.0;
 
 
     @ManyToOne

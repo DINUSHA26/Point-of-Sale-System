@@ -32,6 +32,9 @@ public class OrderServiceImpl implements OrderService {
         private final InventoryRepository inventoryRepository;
         private final BillingService billingService;
         private final com.cdz.service.CustomerService customerService;
+        private final com.cdz.repository.CustomerRepository customerRepository;
+        private final com.cdz.repository.StoreCreditLogRepository storeCreditLogRepository;
+        private final com.cdz.repository.OrderPaymentRepository orderPaymentRepository;
 
         @Override
         @Transactional
@@ -111,17 +114,34 @@ public class OrderServiceImpl implements OrderService {
                 order.setTotalAmount(total);
                 order.setItems(orderItems);
 
-                // Card payment: verify Stripe PaymentIntent succeeded before saving
-                if (orderDTO.getPaymentType() == PaymentType.CARD && orderDTO.getStripePaymentIntentId() != null
-                                && !orderDTO.getStripePaymentIntentId().isBlank()) {
-                        if (!billingService.verifyPaymentSucceeded(orderDTO.getStripePaymentIntentId())) {
-                                throw new Exception("Card payment not confirmed. Complete payment with Stripe first.");
-                        }
-                        order.setStripePaymentIntentId(orderDTO.getStripePaymentIntentId());
+                // Handle Payments (Unified Split/Single)
+                List<OrderPayment> payments = new java.util.ArrayList<>();
+                if (orderDTO.getPayments() != null && !orderDTO.getPayments().isEmpty()) {
+                    double totalPaid = 0.0;
+                    for (var pDto : orderDTO.getPayments()) {
+                        totalPaid += pDto.getAmount();
+                        processAndAddPayment(pDto.getPaymentType(), pDto.getAmount(), pDto.getStripePaymentIntentId(), pDto.getCashTendered(), pDto.getChangeAmount(), customer, order, payments);
+                    }
+                    if (Math.abs(totalPaid - total) > 0.01) {
+                        throw new Exception("Payment mismatch: Total paid $ " + totalPaid + " does not match order total $ " + total);
+                    }
+                } else {
+                    // Fallback for single payment
+                    processAndAddPayment(orderDTO.getPaymentType(), total, orderDTO.getStripePaymentIntentId(), null, null, customer, order, payments);
                 }
+                order.setPayments(payments);
+                if (orderDTO.getStripePaymentIntentId() != null) order.setStripePaymentIntentId(orderDTO.getStripePaymentIntentId());
+
+
+                order.setParentOrderId(orderDTO.getParentOrderId());
 
                 // Validate and deduct inventory BEFORE saving order
                 for (OrderItem item : orderItems) {
+                        if (item.getQuantity() < 0) {
+                                // Skip inventory logic for negative items (handled by RefundService)
+                                continue;
+                        }
+
                         Inventory inventory = inventoryRepository.findByProductIdAndStoreId(
                                         item.getProduct().getId(),
                                         store.getId());
@@ -144,7 +164,7 @@ public class OrderServiceImpl implements OrderService {
                 }
 
                 Order savedOrder = orderRepository.save(order);
-
+                
                 // Award Loyalty Points: 1 point for every $10 spent
                 if (customer != null) {
                     try {
@@ -338,6 +358,8 @@ public class OrderServiceImpl implements OrderService {
                                                         .discountAmount(discountAmountPerUnit)
                                                         .finalPrice(finalPricePerUnit)
                                                         .lineTotal(itemPrice)
+                                                        .returnStatus(item.getReturnStatus() != null ? item.getReturnStatus().name() : null)
+                                                        .linkedOrderId(item.getLinkedOrderId())
                                                         .build();
                                 })
                                 .collect(Collectors.toList());
@@ -347,6 +369,7 @@ public class OrderServiceImpl implements OrderService {
                                 .orderId(order.getId())
                                 .receiptNumber(receiptNumber)
                                 .orderDate(order.getCreatedAt())
+                                .parentOrderId(order.getParentOrderId())
                                 .storeName(storeBrand)
                                 .storeAddress(storeAddress)
                                 .storePhone(storePhone)
@@ -354,11 +377,43 @@ public class OrderServiceImpl implements OrderService {
                                 .customerName(order.getCustomer() != null ? order.getCustomer().getFullName() : null)
                                 .customerPhone(order.getCustomer() != null ? order.getCustomer().getPhone() : null)
                                 .items(receiptItems)
-                                .paymentType(order.getPaymentType() != null ? order.getPaymentType().toString()
-                                                : "CASH")
+                                .paymentType(order.getPaymentType() != null ? order.getPaymentType().toString() : "SPLIT")
+                                .payments(order.getPayments() != null ? order.getPayments().stream().map(com.cdz.mapper.OrderPaymentMapper::toDTO).collect(Collectors.toList()) : null)
                                 .subtotal(order.getSubtotal() != null ? order.getSubtotal() : 0.0)
                                 .totalDiscount(order.getTotalDiscount() != null ? order.getTotalDiscount() : 0.0)
                                 .totalAmount(order.getTotalAmount() != null ? order.getTotalAmount() : 0.0)
+                                .customerStoreCredit(order.getCustomer() != null ? order.getCustomer().getStoreCredit() : null)
                                 .build();
+        }
+
+        private void processAndAddPayment(PaymentType type, double amount, String stripeId, Double cashTendered, Double changeAmount, Customer customer, Order order, List<OrderPayment> payments) throws Exception {
+            if (type == PaymentType.CARD && (stripeId != null && !stripeId.isBlank())) {
+                if (!billingService.verifyPaymentSucceeded(stripeId)) {
+                    throw new Exception("Card payment not confirmed: " + stripeId);
+                }
+            } else if (type == PaymentType.STORE_CREDIT) {
+                if (customer == null) throw new Exception("Store Credit requires a customer.");
+                double currentCredit = customer.getStoreCredit() != null ? customer.getStoreCredit() : 0.0;
+                if (currentCredit < amount) throw new Exception("Insufficient Store Credit. Available: " + currentCredit);
+                customer.setStoreCredit(currentCredit - amount);
+                customerRepository.save(customer);
+                
+                storeCreditLogRepository.save(StoreCreditLog.builder()
+                    .customer(customer)
+                    .amount(-amount)
+                    .type("REDEMPTION")
+                    .orderId(order.getId())
+                    .reason("Order payment redemption")
+                    .build());
+            }
+            
+            payments.add(OrderPayment.builder()
+                .order(order)
+                .paymentType(type)
+                .amount(amount)
+                .cashTendered(cashTendered)
+                .changeAmount(changeAmount)
+                .stripePaymentIntentId(stripeId)
+                .build());
         }
 }

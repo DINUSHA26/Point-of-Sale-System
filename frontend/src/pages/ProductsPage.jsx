@@ -96,8 +96,8 @@ export default function ProductsPage() {
           shelvesRes,
           attrsRes
         ] = await Promise.all([
-          productAPI.getByStore(storeData.id),
-          categoryAPI.getByStore(storeData.id),
+          productAPI.getByStore(storeData.id).catch(() => ({ data: [] })),
+          categoryAPI.getByStore(storeData.id).catch(() => ({ data: [] })),
           storeSettingsAPI.getBrands(storeData.id).catch(() => ({ data: [] })),
           storeSettingsAPI.getRacks(storeData.id).catch(() => ({ data: [] })),
           storeSettingsAPI.getShelves(storeData.id).catch(() => ({ data: [] })),
@@ -262,7 +262,24 @@ export default function ProductsPage() {
 
   const filteredProducts = products.filter(p => {
     const matchSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.sku?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchCat = filterCategory === 'all' || p.category?.id?.toString() === filterCategory;
+
+    let matchCat = true;
+    if (filterCategory !== 'all') {
+      const selectedId = parseInt(filterCategory);
+      const getAllChildIds = (parentId) => {
+        let ids = [parentId];
+        categories
+          .filter(c => c.parentCategoryId === parentId)
+          .forEach(c => {
+            ids = [...ids, ...getAllChildIds(c.id)];
+          });
+        return ids;
+      };
+      const categoryFamily = getAllChildIds(selectedId);
+      const pCatId = p.category?.id || p.categoryId;
+      matchCat = categoryFamily.includes(pCatId);
+    }
+
     return matchSearch && matchCat;
   });
 
@@ -342,9 +359,25 @@ export default function ProductsPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
-                {categories.map((c) => (
-                  <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
-                ))}
+                {(() => {
+                  const buildFlatTree = (cats, parentId = null, depth = 0) => {
+                    let result = [];
+                    cats
+                      .filter(c => (c.parentCategoryId === parentId) || (parentId === null && !c.parentCategoryId))
+                      .forEach(c => {
+                        result.push({ ...c, depth });
+                        result = [...result, ...buildFlatTree(cats, c.id, depth + 1)];
+                      });
+                    return result;
+                  };
+                  return buildFlatTree(categories).map(c => (
+                    <SelectItem key={c.id} value={c.id.toString()}>
+                      {'\u00A0'.repeat(c.depth * 3)}
+                      {c.depth > 0 ? '↳ ' : ''}
+                      {c.name}
+                    </SelectItem>
+                  ));
+                })()}
               </SelectContent>
             </Select>
           </div>
@@ -511,7 +544,25 @@ export default function ProductsPage() {
                     <Select value={formData.categoryId?.toString() || ''} onValueChange={(value) => setFormData({ ...formData, categoryId: parseInt(value) })}>
                       <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                       <SelectContent>
-                        {categories.map((c) => <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>)}
+                        {(() => {
+                          const buildFlatTree = (cats, parentId = null, depth = 0) => {
+                            let result = [];
+                            cats
+                              .filter(c => (c.parentCategoryId === parentId) || (parentId === null && !c.parentCategoryId))
+                              .forEach(c => {
+                                result.push({ ...c, depth });
+                                result = [...result, ...buildFlatTree(cats, c.id, depth + 1)];
+                              });
+                            return result;
+                          };
+                          return buildFlatTree(categories).map(c => (
+                            <SelectItem key={c.id} value={c.id.toString()}>
+                              {'\u00A0'.repeat(c.depth * 3)}
+                              {c.depth > 0 ? '↳ ' : ''}
+                              {c.name}
+                            </SelectItem>
+                          ));
+                        })()}
                       </SelectContent>
                     </Select>
                   </div>
