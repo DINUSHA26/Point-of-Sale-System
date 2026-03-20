@@ -55,11 +55,11 @@ export function ReceiptModal({ orderId, open, onClose }) {
                         </Button>
                     </div>
                 ) : receipt ? (
-                    <div className="receipt-container" ref={printRef}>
+                    <div className="receipt-container bg-white text-black min-h-full" ref={printRef}>
                         <div className="p-6 font-mono text-sm print:p-0">
                             {/* Store Header */}
                             <div className="text-center border-b border-dashed border-gray-300 pb-4 mb-4">
-                                <h2 className="text-xl font-bold uppercase">{receipt.storeName}</h2>
+                                <h2 className="text-xl font-bold uppercase text-black">{receipt.storeName}</h2>
                                 {receipt.storeAddress && <p className="text-xs text-gray-600 mt-1">{receipt.storeAddress}</p>}
                                 {receipt.storePhone && <p className="text-xs text-gray-600">Tel: {receipt.storePhone}</p>}
                             </div>
@@ -157,12 +157,12 @@ export function ReceiptModal({ orderId, open, onClose }) {
                                     </div>
                                 )}
 
-                                <div className="flex justify-between font-bold text-lg border-t border-dashed border-gray-300 pt-2 mt-2">
+                                <div className="flex justify-between font-bold text-lg border-t border-dashed border-gray-300 pt-2 mt-2 text-black">
                                     <span>TOTAL:</span>
                                     <span>${receipt.totalAmount?.toFixed(2) || '0.00'}</span>
                                 </div>
 
-                                <div className="mt-4 pt-2 border-t border-gray-100 italic space-y-1">
+                                <div className="mt-4 pt-2 border-t border-gray-100 italic space-y-1 text-black">
                                     <div className="flex justify-between">
                                         <span className="text-gray-600">Payment Method:</span>
                                         <span className="font-bold uppercase text-xs">{receipt.paymentType.replace('_', ' ')}</span>
@@ -219,6 +219,10 @@ export function ReceiptModal({ orderId, open, onClose }) {
                   top: 0;
                   width: 80mm; /* Standard receipt width */
                   padding: 10px;
+                  background-color: white !important;
+                  color: black !important;
+                  webkit-print-color-adjust: exact;
+                  print-color-adjust: exact;
                 }
                 @page {
                     size: auto;

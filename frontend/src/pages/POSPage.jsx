@@ -523,7 +523,7 @@ export default function POSPage() {
                       }}
                     />
                     {customers.length > 0 && (
-                      <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                      <div className="absolute z-20 w-full mt-1 bg-popover border border-border rounded-lg shadow-xl max-h-48 overflow-y-auto ring-1 ring-black/5">
                         {customers.map((customer) => (
                           <button
                             key={customer.id}
@@ -535,9 +535,14 @@ export default function POSPage() {
                               setCustomers([]);
                               setIsCustomerSectionOpen(false);
                             }}
-                            className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm"
+                            className="w-full text-left px-4 py-2.5 hover:bg-accent hover:text-accent-foreground transition-colors text-sm border-b last:border-0 border-border/50 group"
                           >
-                            {customer.fullName} - {customer.email || customer.phone}
+                            <div className="font-medium group-hover:text-emerald-500 transition-colors uppercase tracking-tight text-[11px]">
+                              {customer.fullName}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground mt-0.5">
+                              {customer.phone || customer.email || 'No contact info'}
+                            </div>
                           </button>
                         ))}
                       </div>
@@ -743,7 +748,10 @@ export default function POSPage() {
 
             {paymentType === 'STORE_CREDIT' && selectedCustomer && (
               <div className="space-y-3">
-                <div className={`p-2 rounded text-xs ${(selectedCustomer.storeCredit || 0) < getTotal() ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-green-50 text-green-600 border border-green-200'}`}>
+                <div className={`p-2 rounded text-xs border ${(selectedCustomer.storeCredit || 0) < getTotal()
+                  ? 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20'
+                  : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                  }`}>
                   {(selectedCustomer.storeCredit || 0) < getTotal()
                     ? `Insufficient Credit! Missing: $${(getTotal() - (selectedCustomer.storeCredit || 0)).toFixed(2)}`
                     : `Remaining Credit after purchase: $${((selectedCustomer.storeCredit || 0) - getTotal()).toFixed(2)}`
@@ -751,8 +759,8 @@ export default function POSPage() {
                 </div>
 
                 {(selectedCustomer.storeCredit || 0) < getTotal() && (
-                  <div className="space-y-2 p-2 border rounded-md bg-white">
-                    <Label className="text-[10px] font-bold uppercase text-gray-500">Remainder Payment Method</Label>
+                  <div className="space-y-2 p-2 border rounded-md bg-muted/30">
+                    <Label className="text-[10px] font-bold uppercase text-muted-foreground">Remainder Payment Method</Label>
                     <Select value={secondaryPaymentType} onValueChange={setSecondaryPaymentType}>
                       <SelectTrigger className="h-8">
                         <SelectValue placeholder="Select Method" />
@@ -770,10 +778,10 @@ export default function POSPage() {
 
             {/* Cash Tendered Input */}
             {(paymentType === 'CASH' || (paymentType === 'STORE_CREDIT' && secondaryPaymentType === 'CASH')) && (
-              <div className="space-y-2 p-3 border rounded-lg bg-orange-50/30 border-orange-100">
+              <div className="space-y-2 p-3 border rounded-lg bg-orange-500/10 border-orange-500/20">
                 <div className="flex justify-between items-center">
-                  <Label className="text-xs font-bold text-orange-700">CASH TENDERED</Label>
-                  <span className="text-[10px] text-orange-600 font-medium">
+                  <Label className="text-xs font-bold text-orange-600 dark:text-orange-400">CASH TENDERED</Label>
+                  <span className="text-[10px] text-orange-500 font-medium">
                     Due: ${paymentType === 'CASH' ? getTotal().toFixed(2) : (getTotal() - (selectedCustomer?.storeCredit || 0)).toFixed(2)}
                   </span>
                 </div>
@@ -782,16 +790,16 @@ export default function POSPage() {
                   <Input
                     type="number"
                     placeholder="Enter amount provided"
-                    className="pl-8 border-orange-200 focus:ring-orange-500"
+                    className="pl-8 border-orange-500/50 focus:ring-orange-500 bg-background/50"
                     value={cashTendered}
                     onChange={(e) => setCashTendered(e.target.value)}
                     autoFocus
                   />
                 </div>
                 {cashTendered && Number(cashTendered) >= (paymentType === 'CASH' ? getTotal() : (getTotal() - (selectedCustomer?.storeCredit || 0))) && (
-                  <div className="flex justify-between items-center pt-1 border-t border-orange-200/50 mt-1">
-                    <span className="text-xs font-bold text-green-700">CHANGE DUE:</span>
-                    <span className="text-lg font-black text-green-700">
+                  <div className="flex justify-between items-center pt-2 border-t border-orange-500/20 mt-2">
+                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">CHANGE DUE:</span>
+                    <span className="text-lg font-black text-emerald-600 dark:text-emerald-400">
                       ${(Number(cashTendered) - (paymentType === 'CASH' ? getTotal() : (getTotal() - (selectedCustomer?.storeCredit || 0)))).toFixed(2)}
                     </span>
                   </div>
@@ -799,13 +807,13 @@ export default function POSPage() {
               </div>
             )}
 
-            <div className="p-4 bg-gray-50 rounded-lg">
+            <div className="p-4 bg-muted/50 rounded-lg border border-border/50 shadow-inner">
               <div className="flex justify-between text-lg font-bold">
-                <span>Total Amount:</span>
-                <span>${getTotal().toFixed(2)}</span>
+                <span className="text-muted-foreground">Total Amount:</span>
+                <span className="text-foreground">${getTotal().toFixed(2)}</span>
               </div>
               {getTotal() < 0 && (
-                <div className="mt-2 text-xs font-bold text-indigo-600 bg-indigo-50 p-2 rounded border border-indigo-200">
+                <div className="mt-2 text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 p-2 rounded border border-indigo-500/20">
                   REFUND BALANCE: ${Math.abs(getTotal()).toFixed(2)} will be issued as Store Credit to {selectedCustomer?.fullName || 'the customer'}.
                 </div>
               )}

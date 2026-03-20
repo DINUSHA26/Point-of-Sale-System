@@ -8,7 +8,7 @@ services:
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-1234}
       MYSQL_DATABASE: pos_bs
     ports:
-      - "3307:3306"
+      - "9000:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:

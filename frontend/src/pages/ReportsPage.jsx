@@ -243,9 +243,7 @@ export default function ReportsPage() {
                     <CardContent>
                         {data.length > 0 ? (
                             <div className="h-[400px] w-full mt-4">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    {renderChart(reportType, data, period, formatCurrency, formatDate, COLORS)}
-                                </ResponsiveContainer>
+                                {renderChart(reportType, data, period, formatCurrency, formatDate, COLORS)}
                             </div>
                         ) : (
                             <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
@@ -349,77 +347,141 @@ function renderChart(type, data, period, formatCurrency, formatDate, COLORS) {
     if (type === 'daily' || type === 'profit-loss' || type === 'monthly') {
         const isProfitLoss = type === 'profit-loss';
         return (
-            <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                <defs>
-                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                    </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" opacity={0.5} />
-                <XAxis
-                    dataKey="date"
-                    tickFormatter={formatDate}
-                    tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                    axisLine={false}
-                    tickLine={false}
-                    dy={10}
-                />
-                <YAxis
-                    tickFormatter={(v) => `$${v >= 1000 ? (v / 1000).toFixed(1) + 'k' : v}`}
-                    tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                    axisLine={false}
-                    tickLine={false}
-                />
-                <Tooltip
-                    contentStyle={customTooltipStyle}
-                    labelFormatter={formatDate}
-                    formatter={(val) => [formatCurrency(val), ""]}
-                />
-                <Area type="monotone" dataKey="totalRevenue" name="Revenue" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
-                {isProfitLoss && (
-                    <Area type="monotone" dataKey="netIncome" name="Net Profit" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorProfit)" />
-                )}
-            </AreaChart>
+            <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                    <defs>
+                        <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                        </linearGradient>
+                        <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                        </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" opacity={0.5} />
+                    <XAxis
+                        dataKey="date"
+                        tickFormatter={formatDate}
+                        tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                        axisLine={false}
+                        tickLine={false}
+                        dy={10}
+                    />
+                    <YAxis
+                        tickFormatter={(v) => `$${v >= 1000 ? (v / 1000).toFixed(1) + 'k' : v}`}
+                        tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                        axisLine={false}
+                        tickLine={false}
+                    />
+                    <Tooltip
+                        contentStyle={customTooltipStyle}
+                        labelFormatter={formatDate}
+                        formatter={(val) => [formatCurrency(val), ""]}
+                    />
+                    <Area type="monotone" dataKey="totalRevenue" name="Revenue" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
+                    {isProfitLoss && (
+                        <Area type="monotone" dataKey="netIncome" name="Net Profit" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorProfit)" />
+                    )}
+                </AreaChart>
+            </ResponsiveContainer>
         );
     }
 
     if (type === 'product') {
         return (
-            <BarChart data={data.slice(0, 8)} layout="vertical" margin={{ left: 50 }}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="hsl(var(--border))" opacity={0.5} />
-                <XAxis type="number" hide />
-                <YAxis
-                    dataKey="productName"
-                    type="category"
-                    tick={{ fontSize: 11, fontWeight: 500 }}
-                    axisLine={false}
-                    tickLine={false}
-                    width={100}
-                />
-                <Tooltip contentStyle={customTooltipStyle} />
-                <Bar dataKey="totalRevenue" fill="#10b981" radius={[0, 4, 4, 0]} barSize={20}>
-                    {data.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                </Bar>
-            </BarChart>
+            <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data.slice(0, 8)} layout="vertical" margin={{ left: 50 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="hsl(var(--border))" opacity={0.5} />
+                    <XAxis type="number" hide />
+                    <YAxis
+                        dataKey="productName"
+                        type="category"
+                        tick={{ fontSize: 11, fontWeight: 500 }}
+                        axisLine={false}
+                        tickLine={false}
+                        width={100}
+                    />
+                    <Tooltip contentStyle={customTooltipStyle} />
+                    <Bar dataKey="totalRevenue" fill="#10b981" radius={[0, 4, 4, 0]} barSize={20}>
+                        {data.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                    </Bar>
+                </BarChart>
+            </ResponsiveContainer>
+        );
+    }
+
+    if (type === 'inventory') {
+        const lowStock = data.filter(i => i.isLowStock).length;
+        const healthy = data.length - lowStock;
+        const chartData = [
+            { name: 'Low Stock', value: lowStock },
+            { name: 'Healthy', value: healthy }
+        ];
+
+        return (
+            <div className="flex flex-col lg:flex-row items-center justify-between h-full w-full gap-4 lg:gap-8 overflow-hidden">
+                <div className="flex-1 w-full h-full min-h-[250px] flex items-center justify-center">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                            <Pie
+                                data={chartData}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius="65%"
+                                outerRadius="90%"
+                                paddingAngle={8}
+                                dataKey="value"
+                                stroke="none"
+                            >
+                                <Cell fill="#ef4444" className="drop-shadow-[0_0_8px_rgba(239,68,68,0.4)]" />
+                                <Cell fill="#10b981" className="drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
+                            </Pie>
+                            <Tooltip contentStyle={customTooltipStyle} />
+                        </PieChart>
+                    </ResponsiveContainer>
+                </div>
+
+                <div className="grid grid-cols-2 lg:grid-cols-1 gap-4 w-full lg:w-64">
+                    <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 shadow-md">
+                        <div className="flex items-center gap-2 mb-1">
+                            <AlertCircle className="h-4 w-4 text-red-500" />
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-red-500/70">Alerts</span>
+                        </div>
+                        <p className="text-3xl font-black text-red-500">{lowStock}</p>
+                        <p className="text-[10px] text-muted-foreground font-medium">Items to restock</p>
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 shadow-md">
+                        <div className="flex items-center gap-2 mb-1">
+                            <Package className="h-4 w-4 text-emerald-500" />
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-500/70">Stable</span>
+                        </div>
+                        <p className="text-3xl font-black text-emerald-500">{healthy}</p>
+                        <p className="text-[10px] text-muted-foreground font-medium">Items healthy</p>
+                    </div>
+                </div>
+            </div>
         );
     }
 
     if (type === 'staff') {
         return (
-            <BarChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="staffName" axisLine={false} tickLine={false} />
-                <YAxis axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={customTooltipStyle} />
-                <Bar dataKey="totalSales" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
-            </BarChart>
+            <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" opacity={0.5} />
+                    <XAxis dataKey="staffName" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} />
+                    <Tooltip contentStyle={customTooltipStyle} />
+                    <Bar dataKey="totalSales" fill="#8b5cf6" radius={[4, 4, 0, 0]} barSize={40}>
+                        {data.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                    </Bar>
+                </BarChart>
+            </ResponsiveContainer>
         );
     }
 
